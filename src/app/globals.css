@@ -1,26 +1,162 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-playfair);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 1rem;
+
+  --background: #0a0a0a;
+  --foreground: #f5f3ee;
+
+  --card: #111111;
+  --card-foreground: #f5f3ee;
+
+  --popover: #131313;
+  --popover-foreground: #f5f3ee;
+
+  --primary: #c9a227;
+  --primary-foreground: #0e0d0a;
+
+  --secondary: #181818;
+  --secondary-foreground: #e7e3d9;
+
+  --muted: #171717;
+  --muted-foreground: #b9b4a9;
+
+  --accent: #1c1c1c;
+  --accent-foreground: #efeadd;
+
+  --destructive: #b55353;
+  --border: rgba(229, 199, 107, 0.24);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: rgba(229, 199, 107, 0.52);
+
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(229, 199, 107, 0.25);
+  --glow-gold: rgba(201, 162, 39, 0.2);
+  --glow-ai: rgba(111, 168, 255, 0.18);
+  --shadow-deep: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(229, 199, 107, 0.08), transparent 35%),
+      radial-gradient(circle at 85% 0%, rgba(111, 168, 255, 0.07), transparent 30%),
+      linear-gradient(180deg, #0b0b0b 0%, #090909 100%);
+  }
+
+  ::selection {
+    background: rgba(201, 162, 39, 0.35);
+    color: #f7f5ef;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .premium-glass {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-deep);
+  }
+
+  .gold-sheen {
+    position: relative;
+  }
+
+  .gold-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      140deg,
+      rgba(229, 199, 107, 0.16),
+      transparent 32%,
+      transparent 68%,
+      rgba(229, 199, 107, 0.08)
+    );
+    mix-blend-mode: screen;
+  }
+
+  .premium-hover {
+    transition:
+      box-shadow 180ms ease,
+      transform 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .premium-hover:hover {
+    box-shadow:
+      var(--shadow-deep),
+      0 0 0 1px rgba(229, 199, 107, 0.25),
+      0 0 24px var(--glow-gold);
+    transform: translateY(-1px);
+  }
+
+  .ai-pulse {
+    box-shadow:
+      0 0 0 1px rgba(229, 199, 107, 0.3),
+      0 0 18px var(--glow-ai);
+    animation: aiPulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes aiPulse {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
 }

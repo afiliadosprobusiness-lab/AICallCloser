@@ -1,0 +1,95 @@
+﻿import { CallSimulator } from "@/components/app/call-simulator";
+import { OutcomeBadge } from "@/components/premium/outcome-badge";
+import { PremiumCard } from "@/components/premium/premium-card";
+import { db } from "@/lib/db";
+import { getWorkspaceContextOrThrow } from "@/lib/session";
+
+export default async function CallsPage() {
+  const { workspaceId } = await getWorkspaceContextOrThrow();
+
+  const calls = await db.call.findMany({
+    where: { workspaceId },
+    include: {
+      lead: true,
+      transcripts: {
+        orderBy: { spokenAt: "asc" },
+      },
+    },
+    orderBy: { startedAt: "desc" },
+    take: 30,
+  });
+
+  const selectedCall = calls[0] ?? null;
+
+  return (
+    <div className="space-y-4 md:space-y-6">
+      <PremiumCard className="p-5 md:p-6">
+        <p className="text-xs uppercase tracking-[0.2em] text-[#A7A296]">Calls</p>
+        <h1 className="mt-2 font-serif text-3xl text-[#F5F3EE]">Historial y transcript</h1>
+        <p className="mt-2 text-sm text-[#B9B4A9]">
+          Revisa outcomes, transcript completo y simulacion de turnos IA.
+        </p>
+      </PremiumCard>
+
+      {selectedCall ? (
+        <PremiumCard className="p-4">
+          <p className="mb-2 text-xs uppercase tracking-[0.14em] text-[#A7A296]">
+            Simulador rapido
+          </p>
+          <CallSimulator callId={selectedCall.id} />
+        </PremiumCard>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <PremiumCard className="space-y-3 p-4">
+          <h2 className="text-lg font-semibold text-[#F5F3EE]">Llamadas recientes</h2>
+          {calls.length === 0 ? (
+            <p className="text-sm text-[#A7A296]">No hay llamadas registradas.</p>
+          ) : (
+            calls.map((call) => (
+              <div
+                key={call.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-3"
+              >
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-[#F5F3EE]">{call.fromNumber}</p>
+                  <OutcomeBadge outcome={call.outcome} />
+                </div>
+                <p className="text-xs text-[#A7A296]">{new Date(call.startedAt).toLocaleString("es-ES")}</p>
+              </div>
+            ))
+          )}
+        </PremiumCard>
+
+        <PremiumCard className="p-4">
+          <h2 className="mb-3 text-lg font-semibold text-[#F5F3EE]">Transcript</h2>
+          {!selectedCall ? (
+            <p className="text-sm text-[#A7A296]">Selecciona una llamada.</p>
+          ) : selectedCall.transcripts.length === 0 ? (
+            <p className="text-sm text-[#A7A296]">Sin transcript todavia.</p>
+          ) : (
+            <div className="space-y-3">
+              {selectedCall.transcripts.map((turn) => (
+                <div
+                  key={turn.id}
+                  className={`rounded-2xl border p-3 ${
+                    turn.speaker === "assistant"
+                      ? "border-[#E5C76B]/35 bg-[#E5C76B]/8"
+                      : turn.speaker === "user"
+                        ? "border-white/10 bg-white/5"
+                        : "border-[#6FA8FF]/20 bg-[#6FA8FF]/8"
+                  }`}
+                >
+                  <p className="mb-1 text-[11px] uppercase tracking-[0.12em] text-[#A7A296]">
+                    {turn.speaker}
+                  </p>
+                  <p className="text-sm leading-relaxed text-[#F5F3EE]">{turn.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </PremiumCard>
+      </div>
+    </div>
+  );
+}

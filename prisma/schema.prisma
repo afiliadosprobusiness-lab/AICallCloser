@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceMemberRole {
+  owner
+  admin
+  member
+}
+
+enum LeadStatus {
+  new
+  qualified
+  unqualified
+  scheduled
+  handed_off
+  won
+  lost
+}
+
+enum CallStatus {
+  ringing
+  in_progress
+  completed
+  failed
+  no_answer
+}
+
+enum CallOutcome {
+  unknown
+  qualified
+  scheduled
+  handoff
+  not_qualified
+  follow_up
+}
+
+enum TranscriptSpeaker {
+  user
+  assistant
+  system
+}
+
+enum HandoffReason {
+  uncertainty
+  objection
+  high_intent
+  requested_human
+  technical
+}
+
+enum HandoffStatus {
+  requested
+  completed
+  failed
+}
+
+model User {
+  id                String            @id @default(cuid())
+  name              String?
+  email             String            @unique
+  emailVerified     DateTime?
+  image             String?
+  passwordHash      String?
+  activeWorkspaceId String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  memberships   WorkspaceMember[]
+  ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
+  activeWorkspace Workspace?        @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id], onDelete: SetNull)
+}
+
+model Workspace {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  ownerId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  activeUsers   User[]            @relation("ActiveWorkspace")
+  members       WorkspaceMember[]
+  twilioNumbers TwilioPhoneNumber[]
+  agentConfig   AgentConfig?
+  leads         Lead[]
+  calls         Call[]
+  transcripts   TranscriptTurn[]
+  appointments  Appointment[]
+  handoffs      Handoff[]
+  metricsDaily  MetricDaily[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String              @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceMemberRole @default(member)
+  createdAt   DateTime            @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId, role])
+}
+
+model TwilioPhoneNumber {
+  id          String   @id @default(cuid())
+  workspaceId String
+  phoneNumber String   @unique
+  friendlyName String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, isActive])
+}
+
+model AgentConfig {
+  id                     String   @id @default(cuid())
+  workspaceId            String   @unique
+  agentName              String   @default("AI Call Closer")
+  systemPrompt           String   @db.Text
+  greetingMessage        String
+  qualificationChecklist Json
+  pricingRules           Json
+  disallowedClaims       Json
+  handoffEnabled         Boolean  @default(true)
+  handoffPhone           String?
+  calendarLink           String?
+  voiceModel             String   @default("gpt-4o-mini-tts")
+  ttsVoice               String   @default("alloy")
+  sttModel               String   @default("gpt-4o-mini-transcribe")
+  llmModel               String   @default("gpt-4.1-mini")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  workspaceId String
+  fullName   String?
+  email      String?
+  phone      String?
+  company    String?
+  notes      String?
+  score      Int        @default(0)
+  status     LeadStatus @default(new)
+  source     String     @default("inbound_call")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  calls        Call[]
+  appointments Appointment[]
+  handoffs     Handoff[]
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
+  @@index([workspaceId, phone])
+  @@unique([workspaceId, phone])
+}
+
+model Call {
+  id             String      @id @default(cuid())
+  workspaceId    String
+  leadId         String?
+  twilioCallSid  String      @unique
+  fromNumber     String
+  toNumber       String
+  status         CallStatus  @default(ringing)
+  outcome        CallOutcome @default(unknown)
+  durationSeconds Int?
+  summary        String?
+  startedAt      DateTime    @default(now())
+  endedAt        DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead        Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  transcripts TranscriptTurn[]
+  appointment Appointment?
+  handoff     Handoff?
+
+  @@index([workspaceId, startedAt])
+  @@index([workspaceId, status])
+  @@index([workspaceId, outcome])
+}
+
+model TranscriptTurn {
+  id          String            @id @default(cuid())
+  workspaceId String
+  callId      String
+  speaker     TranscriptSpeaker
+  text        String            @db.Text
+  metadata    Json?
+  spokenAt    DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  call      Call      @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, spokenAt])
+  @@index([callId, spokenAt])
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  workspaceId String
+  leadId      String
+  callId      String?  @unique
+  startsAt    DateTime
+  timezone    String   @default("America/New_York")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  call      Call?     @relation(fields: [callId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, startsAt])
+  @@index([leadId, startsAt])
+}
+
+model Handoff {
+  id          String        @id @default(cuid())
+  workspaceId String
+  leadId      String
+  callId      String        @unique
+  reason      HandoffReason
+  status      HandoffStatus @default(requested)
+  targetPhone String
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  call      Call      @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, status])
+}
+
+model MetricDaily {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  date             DateTime
+  inboundCalls     Int      @default(0)
+  qualifiedLeads   Int      @default(0)
+  scheduledCalls   Int      @default(0)
+  handoffs         Int      @default(0)
+  closeRatePercent Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, date])
+  @@index([workspaceId, date])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@index([expires])
+}
