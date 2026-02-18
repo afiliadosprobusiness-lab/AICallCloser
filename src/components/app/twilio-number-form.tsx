@@ -18,7 +18,7 @@ export function TwilioNumberForm() {
     event.preventDefault();
 
     startTransition(async () => {
-      await fetch("/api/settings/twilio", {
+      await fetch("/api/settings/telnyx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber, friendlyName }),

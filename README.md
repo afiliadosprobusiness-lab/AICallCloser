@@ -8,7 +8,7 @@ SaaS multi-tenant **mobile-first** en Next.js para gestionar llamadas inbound co
 - Tailwind CSS + shadcn/ui
 - Prisma + PostgreSQL
 - NextAuth (Auth.js) con credenciales + Google via Firebase Auth
-- Plivo Voice inbound/outbound webhooks
+- Telnyx Voice inbound/outbound webhooks
 - OpenAI-compatible LLM + STT + TTS
 - Deploy target: Vercel
 
@@ -17,10 +17,10 @@ SaaS multi-tenant **mobile-first** en Next.js para gestionar llamadas inbound co
 - Multi-tenant real por `workspaceId` en datos de dominio (`Lead`, `Call`, `TranscriptTurn`, `AgentConfig`, etc.).
 - Aislamiento por sesión + membresía (`WorkspaceMember`) en backend.
 - Flujo inbound:
-  1. Plivo -> `/api/plivo/voice/inbound`
+  1. Telnyx -> `/api/telnyx/voice/inbound`
   2. Resolución de workspace por número de telefonía
   3. Persistencia de llamada + lead
-  4. Turnos de voz en `/api/plivo/voice/process`
+  4. Turnos de voz en `/api/telnyx/voice/process`
   5. STT -> LLM (guardrails) -> TTS
   6. Outcome + transcript + handoff/agenda
 
@@ -37,7 +37,7 @@ Documento completo: `docs/architecture-and-plan.md`
 
 - Node.js 20+
 - PostgreSQL 14+
-- Cuenta Plivo (Voice)
+- Cuenta Telnyx (Voice)
 - OpenAI API key (u proveedor compatible)
 
 ## Variables de entorno
@@ -57,11 +57,11 @@ Opcionales para llamadas IA reales:
 ```bash
 OPENAI_API_KEY="..."
 OPENAI_BASE_URL="..." # solo si usas proveedor compatible
-VOICE_PROVIDER="plivo"
-PLIVO_AUTH_ID="..."
-PLIVO_AUTH_TOKEN="..."
-PLIVO_WEBHOOK_BASE_URL="https://tu-dominio-o-ngrok"
-PLIVO_INBOUND_NUMBER="+15550001111"
+VOICE_PROVIDER="telnyx"
+TELNYX_API_KEY="..."
+TELNYX_CONNECTION_ID="..."
+TELNYX_WEBHOOK_BASE_URL="https://tu-dominio-o-ngrok"
+TELNYX_INBOUND_NUMBER="+15550001111"
 HUMAN_HANDOFF_PHONE="+15550001111"
 ```
 
@@ -94,14 +94,14 @@ App: `http://localhost:3000`
 - Email: `demo@aicallcloser.com`
 - Password: `Demo1234!`
 
-## Configuración Plivo
+## Configuración Telnyx
 
 Configura el número inbound:
 
-- Answer URL / Voice webhook (POST): `https://TU_URL/api/plivo/voice/inbound`
-- Hangup URL / Status callback (POST): `https://TU_URL/api/plivo/voice/status`
+- Voice webhook (POST): `https://TU_URL/api/telnyx/voice/inbound`
+- Status callback (POST): `https://TU_URL/api/telnyx/voice/status`
 
-Para local, usar `ngrok http 3000` y poner ese dominio en `PLIVO_WEBHOOK_BASE_URL`.
+Para local, usar `ngrok http 3000` y poner ese dominio en `TELNYX_WEBHOOK_BASE_URL`.
 
 ## Flujo MVP implementado
 
@@ -111,7 +111,7 @@ Para local, usar `ngrok http 3000` y poner ese dominio en `PLIVO_WEBHOOK_BASE_UR
 - Calls (historial + transcript + simulador de turnos)
 - Agente IA (config editable con guardrails)
 - Ajustes (workspace, números, handoff)
-- Webhooks Plivo inbound/status + endpoint outbound
+- Webhooks Telnyx inbound/status + endpoint outbound
 - Pipeline STT/LLM/TTS con fallback seguro
 
 ## Validación manual por fase
@@ -140,7 +140,7 @@ Para local, usar `ngrok http 3000` y poner ese dominio en `PLIVO_WEBHOOK_BASE_UR
 ## Manejo de errores
 
 - Validación de payloads con Zod en endpoints
-- Verificación de firma Plivo/Twilio (según proveedor)
+- Verificación de firma para proveedores legacy (Plivo/Twilio)
 - Logs estructurados con Pino
 - Fallback de IA cuando faltan credenciales o respuesta inválida
 

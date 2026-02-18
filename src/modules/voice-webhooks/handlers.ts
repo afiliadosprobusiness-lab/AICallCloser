@@ -33,6 +33,10 @@ function shouldValidateSignature(provider: VoiceProvider) {
     return Boolean(env.PLIVO_AUTH_TOKEN);
   }
 
+  if (provider === "telnyx") {
+    return false;
+  }
+
   return Boolean(env.TWILIO_AUTH_TOKEN);
 }
 
@@ -41,10 +45,82 @@ function validateSignature(provider: VoiceProvider, request: Request, params: Re
     return verifyPlivoSignature(request, params);
   }
 
+  if (provider === "telnyx") {
+    return true;
+  }
+
   return verifyTwilioSignature(request, params);
 }
 
-function getWebhookParams(formData: FormData) {
+function normalizeJsonValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return "";
+}
+
+function getWebhookParamsFromTelnyxPayload(payload: Record<string, unknown>) {
+  const fromObject = (payload.from ?? payload.from_number) as Record<string, unknown> | undefined;
+  const toObject = (payload.to ?? payload.to_number) as Record<string, unknown> | undefined;
+  const recordingUrls = Array.isArray(payload.recording_urls)
+    ? (payload.recording_urls as unknown[])
+    : [];
+
+  const params: Record<string, string> = {
+    call_control_id: normalizeJsonValue(payload.call_control_id),
+    call_session_id: normalizeJsonValue(payload.call_session_id),
+    call_leg_id: normalizeJsonValue(payload.call_leg_id),
+    call_status: normalizeJsonValue(payload.call_status),
+    event_type: normalizeJsonValue(payload.event_type),
+    from:
+      normalizeJsonValue(fromObject?.phone_number) ||
+      normalizeJsonValue(payload.from) ||
+      normalizeJsonValue(payload.caller_id_number),
+    to:
+      normalizeJsonValue(toObject?.phone_number) ||
+      normalizeJsonValue(payload.to) ||
+      normalizeJsonValue(payload.destination) ||
+      normalizeJsonValue(payload.to_number),
+    recording_url:
+      normalizeJsonValue(payload.recording_url) ||
+      normalizeJsonValue(payload.recording_urls_0) ||
+      normalizeJsonValue(recordingUrls[0]),
+    duration_secs:
+      normalizeJsonValue(payload.duration_secs) ||
+      normalizeJsonValue(payload.duration) ||
+      normalizeJsonValue(payload.bill_duration),
+  };
+
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => Boolean(value)),
+  );
+}
+
+async function getWebhookParams(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const json = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const data = (json.data ?? {}) as Record<string, unknown>;
+    const payload = (data.payload ?? json.payload ?? {}) as Record<string, unknown>;
+
+    return {
+      ...Object.fromEntries(
+        Object.entries(json).map(([key, value]) => [key, normalizeJsonValue(value)]),
+      ),
+      ...Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [key, normalizeJsonValue(value)]),
+      ),
+      ...getWebhookParamsFromTelnyxPayload(payload),
+    };
+  }
+
+  const formData = await request.formData();
   return Object.fromEntries(
     Array.from(formData.entries()).map(([key, value]) => [key, String(value)]),
   );
@@ -65,13 +141,20 @@ function buildAudioUrl(params: {
 }
 
 function processPath(provider: VoiceProvider) {
-  return provider === "plivo" ? "/api/plivo/voice/process" : "/api/twilio/voice/process";
+  if (provider === "plivo") {
+    return "/api/plivo/voice/process";
+  }
+
+  if (provider === "telnyx") {
+    return "/api/telnyx/voice/process";
+  }
+
+  return "/api/twilio/voice/process";
 }
 
 export async function handleInboundVoiceWebhook(provider: VoiceProvider, request: Request) {
   try {
-    const formData = await request.formData();
-    const params = getWebhookParams(formData);
+    const params = await getWebhookParams(request);
 
     if (shouldValidateSignature(provider) && !validateSignature(provider, request, params)) {
       return new Response("Invalid signature", { status: 403 });
@@ -162,8 +245,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       return new Response("Missing query params", { status: 400 });
     }
 
-    const formData = await request.formData();
-    const params = getWebhookParams(formData);
+    const params = await getWebhookParams(request);
 
     if (shouldValidateSignature(provider) && !validateSignature(provider, request, params)) {
       return new Response("Invalid signature", { status: 403 });
@@ -329,8 +411,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
 export async function handleStatusVoiceWebhook(provider: VoiceProvider, request: Request) {
   try {
-    const formData = await request.formData();
-    const params = getWebhookParams(formData);
+    const params = await getWebhookParams(request);
 
     if (shouldValidateSignature(provider) && !validateSignature(provider, request, params)) {
       return new Response("Invalid signature", { status: 403 });

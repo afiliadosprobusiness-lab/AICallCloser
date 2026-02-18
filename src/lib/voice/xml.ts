@@ -23,6 +23,10 @@ export function buildPromptAndRecordVoiceXml(
     return buildPromptAndRecordPlivoXml(params);
   }
 
+  if (provider === "telnyx") {
+    return buildPromptAndRecordTwiml(params);
+  }
+
   return buildPromptAndRecordTwiml(params);
 }
 
@@ -35,6 +39,10 @@ export function buildGoodbyeVoiceXml(
 ) {
   if (provider === "plivo") {
     return buildGoodbyePlivoXml(params);
+  }
+
+  if (provider === "telnyx") {
+    return buildGoodbyeTwiml(params);
   }
 
   return buildGoodbyeTwiml(params);
@@ -50,6 +58,10 @@ export function buildHandoffVoiceXml(
 ) {
   if (provider === "plivo") {
     return buildHandoffPlivoXml(params);
+  }
+
+  if (provider === "telnyx") {
+    return buildHandoffTwiml(params);
   }
 
   return buildHandoffTwiml(params);

@@ -3,20 +3,20 @@
 ## 1) Arquitectura textual (MVP + escalable)
 
 ### Objetivo de arquitectura
-SaaS multi-tenant real por `workspace`, con aislamiento lógico de datos, telefonía inbound con Twilio, orquestación conversacional IA con guardrails y persistencia completa de resultados (lead, transcript, outcome, agenda/handoff).
+SaaS multi-tenant real por `workspace`, con aislamiento lógico de datos, telefonía inbound con Telnyx, orquestación conversacional IA con guardrails y persistencia completa de resultados (lead, transcript, outcome, agenda/handoff).
 
 ### Arquitectura de alto nivel
 - Frontend: Next.js 14+ App Router, TypeScript estricto, Tailwind + shadcn/ui, mobile-first.
 - Backend BFF/API: Route Handlers en App Router (`app/api/*`) con validación Zod y logging estructurado.
 - Auth: Auth.js/NextAuth con sesión JWT + resolución de workspace activo.
 - Datos: PostgreSQL + Prisma con estrategias multi-tenant por `workspaceId` en tablas de dominio.
-- Telefonía: Twilio Voice inbound webhook + TwiML para media stream/flujo conversacional.
+- Telefonía: Telnyx Voice inbound webhook + TeXML/TwiML para flujo conversacional.
 - IA Runtime:
   - STT: transcripción de audio de llamada (streaming o chunked) hacia proveedor OpenAI-compatible.
   - LLM: motor de diálogo con prompt por workspace + políticas de guardrails.
   - TTS: síntesis de respuestas para retorno de audio al caller.
 - Observabilidad: logs JSON, correlación por `callId`, `workspaceId`, `requestId`.
-- Deploy: Vercel (web + API), Postgres gestionado, Twilio webhook a dominio productivo.
+- Deploy: Vercel (web + API), Postgres gestionado, Telnyx webhook a dominio productivo.
 
 ### Multi-tenant real
 - Entidades críticas con `workspaceId` obligatorio: `AgentConfig`, `Lead`, `Call`, `Transcript`, `Appointment`, `Handoff`.
@@ -25,9 +25,9 @@ SaaS multi-tenant real por `workspace`, con aislamiento lógico de datos, telefo
 - Índices compuestos para aislamiento y performance: `(workspaceId, createdAt)`, `(workspaceId, status)`.
 
 ### Flujo inbound (end-to-end)
-1. Cliente llama al número Twilio del workspace.
-2. Twilio pega a `POST /api/twilio/voice/inbound` con metadata de llamada.
-3. Se resuelve workspace por número Twilio.
+1. Cliente llama al número Telnyx del workspace.
+2. Telnyx pega a `POST /api/telnyx/voice/inbound` con metadata de llamada.
+3. Se resuelve workspace por número Telnyx.
 4. Se crea registro `Call` en estado `in_progress`.
 5. Pipeline conversacional:
    - Captura voz -> STT
@@ -45,7 +45,7 @@ SaaS multi-tenant real por `workspace`, con aislamiento lógico de datos, telefo
 
 ### Seguridad
 - Validación de entrada con Zod en TODOS los endpoints.
-- Verificación de firma de Twilio en webhooks.
+- Verificación de firma en webhooks (legacy Twilio/Plivo cuando aplica).
 - Secrets en variables de entorno (sin hardcode).
 - Rate limiting básico en endpoints sensibles.
 - Sanitización de texto para evitar prompt injection simple.
@@ -147,12 +147,10 @@ SaaS multi-tenant real por `workspace`, con aislamiento lógico de datos, telefo
 - `OPENAI_MODEL`
 - `OPENAI_STT_MODEL`
 - `OPENAI_TTS_MODEL`
-- `TWILIO_ACCOUNT_SID`
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_API_KEY`
-- `TWILIO_API_SECRET`
-- `TWILIO_INBOUND_NUMBER`
-- `TWILIO_WEBHOOK_BASE_URL`
+- `TELNYX_API_KEY`
+- `TELNYX_CONNECTION_ID`
+- `TELNYX_INBOUND_NUMBER`
+- `TELNYX_WEBHOOK_BASE_URL`
 - `HUMAN_HANDOFF_PHONE`
 - `LOG_LEVEL`
 
@@ -188,17 +186,17 @@ SaaS multi-tenant real por `workspace`, con aislamiento lógico de datos, telefo
 - Manejo de errores:
   - Fallbacks de datos por sección.
 
-### Fase 3 - Twilio inbound
+### Fase 3 - Telnyx inbound
 - Alcance:
   - Webhook inbound firmado.
   - Registro de llamada + mapeo de número a workspace.
 - Correr local:
   - `ngrok http 3000`
-  - Configurar webhook Twilio.
+  - Configurar webhook Telnyx.
 - Validación manual:
   - Llamada real crea `Call`.
 - Manejo de errores:
-  - Reintentos idempotentes por `CallSid`.
+  - Reintentos idempotentes por `call_session_id`/`call_control_id`.
 
 ### Fase 4 - STT -> LLM -> TTS
 - Alcance:

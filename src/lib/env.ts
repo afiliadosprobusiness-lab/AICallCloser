@@ -6,7 +6,7 @@ const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: emptyToUndefined(z.string().min(1).optional()),
-  VOICE_PROVIDER: z.enum(["plivo", "twilio"]).default("plivo"),
+  VOICE_PROVIDER: z.enum(["telnyx", "plivo", "twilio"]).default("telnyx"),
   NEXTAUTH_URL: emptyToUndefined(z.string().url().optional()),
   NEXTAUTH_SECRET: emptyToUndefined(z.string().min(16).optional()),
   AUTH_TRUST_HOST: emptyToUndefined(z.string().optional()),
@@ -36,6 +36,10 @@ const envSchema = z.object({
   PLIVO_AUTH_TOKEN: emptyToUndefined(z.string().optional()),
   PLIVO_INBOUND_NUMBER: emptyToUndefined(z.string().optional()),
   PLIVO_WEBHOOK_BASE_URL: emptyToUndefined(z.string().url().optional()),
+  TELNYX_API_KEY: emptyToUndefined(z.string().optional()),
+  TELNYX_CONNECTION_ID: emptyToUndefined(z.string().optional()),
+  TELNYX_INBOUND_NUMBER: emptyToUndefined(z.string().optional()),
+  TELNYX_WEBHOOK_BASE_URL: emptyToUndefined(z.string().url().optional()),
   HUMAN_HANDOFF_PHONE: emptyToUndefined(z.string().optional()),
   LOG_LEVEL: emptyToUndefined(z.string().optional()),
 });

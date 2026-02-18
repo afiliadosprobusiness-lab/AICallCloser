@@ -121,8 +121,8 @@ export default function HomePage() {
       {
         title: t("Conecta tu numero", "Connect your number"),
         description: t(
-          "Integra tu linea con Plivo en minutos, sin cambiar tu operacion actual.",
-          "Integrate your line with Plivo in minutes, without changing your current operation.",
+          "Integra tu linea con Telnyx en minutos, sin cambiar tu operacion actual.",
+          "Integrate your line with Telnyx in minutes, without changing your current operation.",
         ),
         icon: PhoneCall,
       },

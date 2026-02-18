@@ -15,6 +15,10 @@ function getRecordingRequestHeaders(provider: VoiceProvider) {
     return { Authorization: `Basic ${auth}` } satisfies Record<string, string>;
   }
 
+  if (provider === "telnyx" && env.TELNYX_API_KEY) {
+    return { Authorization: `Bearer ${env.TELNYX_API_KEY}` } satisfies Record<string, string>;
+  }
+
   return {} as Record<string, string>;
 }
 
