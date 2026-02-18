@@ -28,8 +28,8 @@ export function TwilioNumberForm(props: VoiceNumberFormProps) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const settingsEndpoint = props.settingsEndpoint ?? "/api/settings/telnyx";
-  const providerLabel = props.providerLabel ?? "Telnyx";
+  const settingsEndpoint = props.settingsEndpoint ?? "/api/settings/twilio";
+  const providerLabel = props.providerLabel ?? "Twilio";
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,22 +43,33 @@ export function TwilioNumberForm(props: VoiceNumberFormProps) {
       });
 
       const result = (await response.json().catch(() => null)) as NumberFormApiError | null;
+      const fallbackText = result
+        ? ""
+        : await response
+            .text()
+            .then((text) => text.trim())
+            .catch(() => "");
 
       if (!response.ok) {
         const fallbackFieldError = result?.error?.fieldErrors
           ? Object.values(result.error.fieldErrors).flat().find(Boolean)
           : undefined;
+        const messageCandidates = [
+          result?.error?.message,
+          result?.error?.formErrors?.[0],
+          fallbackFieldError,
+          fallbackText,
+          t(
+            `No se pudo guardar el numero de ${providerLabel}. Verifica formato y permisos.`,
+            `Could not save the ${providerLabel} number. Verify format and permissions.`,
+          ),
+        ];
 
         setStatus({
           type: "error",
-          message:
-            result?.error?.message ??
-            result?.error?.formErrors?.[0] ??
-            fallbackFieldError ??
-            t(
-              `No se pudo guardar el numero de ${providerLabel}. Verifica formato y permisos.`,
-              `Could not save the ${providerLabel} number. Verify format and permissions.`,
-            ),
+          message: messageCandidates.find(
+            (candidate): candidate is string => Boolean(candidate && candidate.trim()),
+          )!,
         });
         return;
       }

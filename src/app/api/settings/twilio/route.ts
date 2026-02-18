@@ -8,8 +8,13 @@ const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema);
 
 const payloadSchema = z.object({
-  phoneNumber: z.string().trim().min(7),
-  friendlyName: emptyToUndefined(z.string().trim().min(2).max(80).optional()),
+  phoneNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/[\s()-]/g, ""))
+    .transform((value) => (value.startsWith("+") ? value : `+${value}`))
+    .pipe(z.string().regex(/^\+[1-9]\d{6,14}$/, "Phone must be E.164 format (e.g. +15551234567).")),
+  friendlyName: emptyToUndefined(z.string().trim().max(80).optional()),
   isActive: z.boolean().default(true),
 });
 
@@ -53,7 +58,18 @@ export async function POST(request: Request) {
     const parsed = payloadSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
+      const flattened = parsed.error.flatten();
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            message: "Invalid number payload",
+            formErrors: flattened.formErrors,
+            fieldErrors: flattened.fieldErrors,
+          },
+        },
+        { status: 400 },
+      );
     }
 
     const item = await db.twilioPhoneNumber.upsert({
@@ -75,6 +91,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, data: item }, { status: 201 });
   } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "P2002") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: { message: "This phone number is already linked to another workspace." },
+        },
+        { status: 409 },
+      );
+    }
+
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ ok: false, error: { message: "Unauthorized" } }, { status: 401 });
     }

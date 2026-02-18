@@ -90,22 +90,20 @@ export async function getSessionOrThrow() {
 export async function getWorkspaceContextOrThrow() {
   const { session, user } = await getValidatedSessionContext();
 
-  const activeWorkspaceId =
-    session.user.activeWorkspaceId ?? user.activeWorkspaceId ?? user.memberships[0]?.workspaceId ?? null;
-
-  if (!activeWorkspaceId) {
-    throw new Error("WORKSPACE_NOT_SELECTED");
-  }
-
-  const membership = user.memberships.find((item) => item.workspaceId === activeWorkspaceId);
+  const fallbackMembership = user.memberships[0] ?? null;
+  const preferredWorkspaceId = session.user.activeWorkspaceId ?? user.activeWorkspaceId ?? null;
+  const membership =
+    (preferredWorkspaceId
+      ? user.memberships.find((item) => item.workspaceId === preferredWorkspaceId)
+      : null) ?? fallbackMembership;
 
   if (!membership) {
-    throw new Error("WORKSPACE_FORBIDDEN");
+    throw new Error("WORKSPACE_NOT_SELECTED");
   }
 
   return {
     userId: user.id,
-    workspaceId: activeWorkspaceId,
+    workspaceId: membership.workspaceId,
     role: membership.role,
   };
 }
