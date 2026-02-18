@@ -34,33 +34,26 @@ export function GoogleAuthButton({
     };
   }, []);
 
+  if (googleState !== "enabled") {
+    return null;
+  }
+
   return (
-    <div className="space-y-2">
-      <div className="iridescent-border rounded-xl">
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={isPending || googleState !== "enabled"}
-          onClick={() =>
-            startTransition(async () => {
-              await signIn("google", { callbackUrl });
-            })
-          }
-          className="iridescent-surface h-11 w-full rounded-xl border border-white/15 bg-white/[0.04] text-[#ECE8DE] hover:text-[#F7F4EC]"
-        >
-          <GoogleGlyph />
-          {googleState === "loading"
-            ? "Verificando Google..."
-            : isPending
-              ? "Conectando..."
-              : label}
-        </Button>
-      </div>
-      {googleState === "disabled" ? (
-        <p className="text-xs text-[#9D988D]">
-          Activa Google con `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
-        </p>
-      ) : null}
+    <div className="iridescent-border rounded-xl">
+      <Button
+        type="button"
+        variant="ghost"
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            await signIn("google", { callbackUrl });
+          })
+        }
+        className="iridescent-surface h-11 w-full rounded-xl border border-white/15 bg-white/[0.04] text-[#ECE8DE] hover:text-[#F7F4EC]"
+      >
+        <GoogleGlyph />
+        {isPending ? "Conectando..." : label}
+      </Button>
     </div>
   );
 }
