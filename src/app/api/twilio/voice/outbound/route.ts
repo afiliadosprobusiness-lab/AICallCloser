@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       parsed.data.answerText ??
       "Hello, this is AI Call Closer assistant confirming your interest and booking your call.";
 
-    const answerUrl = `${env.APP_URL}/api/twilio/voice/outbound/answer?workspaceId=${workspaceId}&message=${encodeURIComponent(message)}`;
+    const answerUrl = `${env.APP_URL}/api/twilio/voice/outbound/answer?workspaceId=${workspaceId}&to=${encodeURIComponent(parsed.data.to)}&from=${encodeURIComponent(fromNumber)}&message=${encodeURIComponent(message)}`;
     const statusCallbackUrl = `${env.APP_URL}/api/twilio/voice/status`;
 
     const createdCall = await twilioClient.calls.create({
