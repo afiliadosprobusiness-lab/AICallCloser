@@ -39,8 +39,11 @@ export default async function RootLayout({
   const locale = await getRequestLocale();
 
   return (
-    <html lang={locale} className="dark">
-      <body className={`${manrope.variable} ${playfair.variable} antialiased`}>
+    <html lang={locale} className="dark notranslate" translate="no">
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
+      <body className={`${manrope.variable} ${playfair.variable} notranslate antialiased`} translate="no">
         <LocaleProvider locale={locale}>
           <FirebaseProvider>{children}</FirebaseProvider>
         </LocaleProvider>

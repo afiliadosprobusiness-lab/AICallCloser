@@ -21,8 +21,8 @@ export function CallsLineChart({ data }: { data: MetricItem[] }) {
   }));
 
   return (
-    <div className="h-48 w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-48 w-full min-w-0">
+      <ResponsiveContainer width="100%" height="100%" minWidth={240} minHeight={192} debounce={80}>
         <LineChart data={normalized}>
           <XAxis dataKey="label" tick={{ fill: "#A7A296", fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#A7A296", fontSize: 11 }} axisLine={false} tickLine={false} width={28} />
