@@ -1128,15 +1128,15 @@ export default function HomePage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="h-auto w-full justify-between rounded-xl border border-white/12 bg-white/[0.02] px-4 py-4 text-left hover:bg-white/[0.08]"
+                        className="h-auto w-full items-start justify-between gap-3 whitespace-normal rounded-xl border border-white/12 bg-white/[0.02] px-4 py-4 text-left hover:bg-white/[0.08]"
                         onClick={() => setActiveFaqIndex((previous) => (previous === index ? -1 : index))}
                       >
-                        <span className="pr-4 text-sm font-semibold leading-snug text-white sm:text-base">
+                        <span className="block flex-1 text-sm font-semibold leading-snug break-words text-white sm:text-base">
                           {faq.question}
                         </span>
                         <ChevronRight
                           className={cn(
-                            "h-5 w-5 shrink-0 text-[#9AB0FF] transition-transform duration-200",
+                            "mt-0.5 h-5 w-5 shrink-0 text-[#9AB0FF] transition-transform duration-200",
                             isOpen && "rotate-90",
                           )}
                         />
