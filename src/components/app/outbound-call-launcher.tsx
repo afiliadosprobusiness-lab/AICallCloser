@@ -45,7 +45,6 @@ export function OutboundCallLauncher(props: OutboundCallLauncherProps) {
   const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [toNumber, setToNumber] = useState("");
-  const [answerText, setAnswerText] = useState("");
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -68,7 +67,6 @@ export function OutboundCallLauncher(props: OutboundCallLauncherProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: normalizedTo,
-          answerText: answerText.trim() || undefined,
         }),
       });
 
@@ -102,8 +100,13 @@ export function OutboundCallLauncher(props: OutboundCallLauncherProps) {
 
   return (
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
-      <p className="text-xs uppercase tracking-[0.12em] text-[#A7A296]">{t("Llamada de prueba", "Test call")}</p>
-      <p className="mt-1 text-sm text-[#F5F3EE]">{t(`Marca desde la plataforma con ${props.providerLabel}.`, `Dial from the platform with ${props.providerLabel}.`)}</p>
+      <p className="text-xs uppercase tracking-[0.12em] text-[#A7A296]">{t("Llamada outbound IA", "AI outbound call")}</p>
+      <p className="mt-1 text-sm text-[#F5F3EE]">
+        {t(
+          `Ejecuta el guion configurado en Agente IA con ${props.providerLabel}.`,
+          `Run the Agent AI configured script with ${props.providerLabel}.`,
+        )}
+      </p>
 
       <form onSubmit={onSubmit} className="mt-3 space-y-2">
         <Input
@@ -112,12 +115,6 @@ export function OutboundCallLauncher(props: OutboundCallLauncherProps) {
           placeholder="+51924464410"
           autoComplete="tel"
           inputMode="tel"
-          className="h-11 rounded-xl border-white/15 bg-white/5"
-        />
-        <Input
-          value={answerText}
-          onChange={(event) => setAnswerText(event.target.value)}
-          placeholder={t("Mensaje inicial opcional", "Optional opening message")}
           className="h-11 rounded-xl border-white/15 bg-white/5"
         />
 
@@ -146,10 +143,12 @@ export function OutboundCallLauncher(props: OutboundCallLauncherProps) {
         </p>
       ) : (
         <p className="mt-2 text-xs text-[#A7A296]">
-          {t("Tip: usa formato completo con +codigo de pais.", "Tip: use full format with +country code.")}
+          {t(
+            "Usa formato completo con +codigo de pais. El opening sale de Agente IA.",
+            "Use full +country-code format. Opening is loaded from Agent AI.",
+          )}
         </p>
       )}
     </div>
   );
 }
-

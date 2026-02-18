@@ -16,7 +16,6 @@ const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 const outboundPayloadSchema = z.object({
   to: z.string().trim().regex(E164_REGEX, "Use E.164 format. Example: +51924464410"),
   from: z.string().trim().regex(E164_REGEX, "Use E.164 format. Example: +15752550685").optional(),
-  answerText: z.string().trim().min(3).max(300).optional(),
 });
 
 function asStringArray(value: unknown) {
@@ -167,7 +166,7 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
   }
 
   const baseUrl = input.requestBaseUrl ?? getBaseUrl();
-  const twimlUrl = `${baseUrl}/api/twilio/voice/outbound?agentId=${encodeURIComponent(agentConfig.id)}${parsed.data.answerText ? `&message=${encodeURIComponent(parsed.data.answerText)}` : ""}`;
+  const twimlUrl = `${baseUrl}/api/twilio/voice/outbound/answer?agentId=${encodeURIComponent(agentConfig.id)}`;
   const statusCallbackUrl = `${baseUrl}/api/twilio/voice/status`;
 
   try {
@@ -339,7 +338,6 @@ export async function handleTwilioOutboundTwiml(request: Request) {
 
   const agentId = url.searchParams.get("agentId") ?? params.agentId ?? null;
   const workspaceId = url.searchParams.get("workspaceId") ?? params.workspaceId ?? null;
-  const overrideMessage = url.searchParams.get("message") ?? params.message ?? null;
   const callSid = params.CallSid ?? "";
   const fromNumber = params.From ?? "";
   const toNumber = params.To ?? "";
@@ -353,7 +351,7 @@ export async function handleTwilioOutboundTwiml(request: Request) {
 
   const resolvedOpening =
     runtime.agentConfig.greetingMessage?.trim() ||
-    overrideMessage ||
+    runtime.playbook.opening ||
     buildDefaultOpening({
       language: runtime.preferences.language,
       agentName: runtime.agentConfig.agentName,

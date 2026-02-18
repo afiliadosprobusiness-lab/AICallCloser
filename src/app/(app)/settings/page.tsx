@@ -170,7 +170,7 @@ export default async function SettingsPage() {
         <PremiumCard className="space-y-4 p-4 md:p-5">
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Caller ID salida", "Outbound caller ID")}</p>
-            <h2 className="mt-1 text-lg font-semibold text-[#F5F3EE]">{t("Numero para Test Call outbound", "Number for outbound Test Call")}</h2>
+            <h2 className="mt-1 text-lg font-semibold text-[#F5F3EE]">{t("Numero para llamadas outbound IA", "Number for AI outbound calls")}</h2>
           </div>
           <OutboundCallerIdForm
             settingsEndpoint={settingsEndpoint}

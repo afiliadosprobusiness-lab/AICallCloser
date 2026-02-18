@@ -114,8 +114,8 @@ export function OutboundCallerIdForm(props: OutboundCallerIdFormProps) {
       ) : (
         <p className="text-xs text-[#A7A296] md:col-span-2">
           {t(
-            "Este numero se usara en Test Call outbound antes de TWILIO_NUMBER.",
-            "This number is used for outbound Test Call before TWILIO_NUMBER.",
+            "Este numero se usara en llamadas outbound IA antes de TWILIO_NUMBER.",
+            "This number is used for AI outbound calls before TWILIO_NUMBER.",
           )}
         </p>
       )}
