@@ -1,6 +1,8 @@
 ﻿import type { Metadata } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 
+import { FirebaseProvider } from "@/components/providers/firebase-provider";
+
 import "./globals.css";
 
 const manrope = Manrope({
@@ -27,7 +29,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="dark">
-      <body className={`${manrope.variable} ${playfair.variable} antialiased`}>{children}</body>
+      <body className={`${manrope.variable} ${playfair.variable} antialiased`}>
+        <FirebaseProvider>{children}</FirebaseProvider>
+      </body>
     </html>
   );
 }
