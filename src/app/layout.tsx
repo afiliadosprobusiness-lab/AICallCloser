@@ -22,6 +22,11 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "AI Call Closer",
   description: "SaaS premium multi-tenant para cerrar ventas con llamadas IA.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: ["/icon.svg"],
+    apple: [{ url: "/icon.svg" }],
+  },
 };
 
 export const revalidate = 0;

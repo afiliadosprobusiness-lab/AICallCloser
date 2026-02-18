@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -211,9 +212,7 @@ export default function HomePage() {
         <header className="sticky top-4 z-40">
           <nav className="mx-auto flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 backdrop-blur-xl md:px-6">
             <Link href="/" className="inline-flex items-center gap-3">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#3D7BFF] to-[#8D4BFF] text-sm font-semibold">
-                AI
-              </span>
+              <BrandMark className="h-8 w-8" />
               <span className="text-sm font-semibold tracking-wide text-white/95 md:text-base">
                 AI Call Closer
               </span>

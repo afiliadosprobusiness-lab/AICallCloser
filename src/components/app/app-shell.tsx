@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { useLocale } from "@/components/providers/locale-provider";
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
@@ -79,7 +80,10 @@ export function AppShell(props: {
           <div className="mb-3 flex justify-end">
             <LanguageToggle compact />
           </div>
-          <p className="font-serif text-2xl text-[#F5F3EE]">AI Call Closer</p>
+          <div className="mb-2 flex items-center gap-3">
+            <BrandMark className="h-10 w-10" />
+            <p className="font-serif text-2xl text-[#F5F3EE]">AI Call Closer</p>
+          </div>
           <p className="text-sm text-[#B9B4A9]">
             {t("Workspace premium de conversion", "Premium conversion workspace")}
           </p>

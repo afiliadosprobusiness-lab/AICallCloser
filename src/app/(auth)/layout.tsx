@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandMark } from "@/components/brand/brand-mark";
 import { LanguageToggle } from "@/components/language-toggle";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/config";
@@ -16,6 +17,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           <LanguageToggle compact />
         </div>
         <Link href="/" className="mb-6 block text-center">
+          <div className="mb-2 flex justify-center">
+            <BrandMark className="h-12 w-12" />
+          </div>
           <h1 className="font-serif text-3xl text-[#F5F3EE]">AI Call Closer</h1>
           <p className="mt-1 text-sm text-[#C9C5BB]">
             {t("Premium SaaS para closers de alto rendimiento", "Premium SaaS for high-performance closers")}
