@@ -147,6 +147,66 @@
       0 0 18px var(--glow-ai);
     animation: aiPulse 1.8s ease-in-out infinite;
   }
+
+  .iridescent-border {
+    position: relative;
+  }
+
+  .iridescent-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background:
+      linear-gradient(
+        120deg,
+        rgba(229, 199, 107, 0.45),
+        rgba(94, 148, 255, 0.36),
+        rgba(170, 122, 255, 0.38),
+        rgba(229, 199, 107, 0.45)
+      );
+    background-size: 220% 220%;
+    animation: iridescentFlow 7s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.74;
+    transition: opacity 220ms ease;
+  }
+
+  .iridescent-border:hover::before,
+  .iridescent-border:focus-within::before {
+    opacity: 1;
+  }
+
+  .iridescent-surface {
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease,
+      background 240ms ease;
+  }
+
+  .iridescent-surface:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 18px 40px rgba(10, 13, 30, 0.55),
+      0 0 0 1px rgba(130, 138, 255, 0.2),
+      0 0 34px rgba(92, 116, 255, 0.22);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04)),
+      linear-gradient(120deg, rgba(33, 64, 140, 0.2), rgba(100, 54, 165, 0.18));
+  }
+
+  .iridescent-surface:active {
+    transform: translateY(0);
+    box-shadow:
+      0 12px 28px rgba(10, 13, 30, 0.46),
+      0 0 0 1px rgba(130, 138, 255, 0.24),
+      0 0 28px rgba(110, 118, 255, 0.26);
+  }
 }
 
 @keyframes aiPulse {
@@ -158,5 +218,14 @@
   50% {
     opacity: 1;
     transform: scale(1.02);
+  }
+}
+
+@keyframes iridescentFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
   }
 }
