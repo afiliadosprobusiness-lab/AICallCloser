@@ -2,7 +2,7 @@ export const localeValues = ["es", "en"] as const;
 
 export type Locale = (typeof localeValues)[number];
 
-export const defaultLocale: Locale = "es";
+export const defaultLocale: Locale = "en";
 export const localeCookieName = "aicallcloser_locale";
 
 export function normalizeLocale(value: string | null | undefined): Locale {
@@ -11,7 +11,7 @@ export function normalizeLocale(value: string | null | undefined): Locale {
   }
 
   const normalized = value.trim().toLowerCase();
-  return normalized === "en" ? "en" : "es";
+  return normalized === "es" ? "es" : "en";
 }
 
 export function translate(locale: Locale, esText: string, enText: string) {
