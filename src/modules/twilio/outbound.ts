@@ -9,6 +9,7 @@ import { getTwilioClient } from "@/lib/twilio/client";
 import { verifyTwilioSignature } from "@/lib/twilio/security";
 import { signTtsPayload } from "@/lib/voice/token";
 import { xmlResponse } from "@/lib/voice/webhook-response";
+import { OUTBOUND_CALLER_ID_MARKER } from "@/lib/voice/outbound-number";
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
@@ -114,7 +115,19 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
     };
   }
 
-  const [workspaceNumber, agentConfig] = await Promise.all([
+  const [outboundWorkspaceNumber, workspaceNumber, agentConfig] = await Promise.all([
+    db.twilioPhoneNumber.findFirst({
+      where: {
+        workspaceId: input.workspaceId,
+        isActive: true,
+        friendlyName: {
+          contains: OUTBOUND_CALLER_ID_MARKER,
+          mode: "insensitive",
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { phoneNumber: true },
+    }),
     db.twilioPhoneNumber.findFirst({
       where: { workspaceId: input.workspaceId, isActive: true },
       orderBy: { createdAt: "asc" },
@@ -137,7 +150,11 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
   }
 
   const fromNumber =
-    parsed.data.from ?? env.TWILIO_NUMBER ?? env.TWILIO_INBOUND_NUMBER ?? workspaceNumber?.phoneNumber;
+    parsed.data.from ??
+    outboundWorkspaceNumber?.phoneNumber ??
+    env.TWILIO_NUMBER ??
+    env.TWILIO_INBOUND_NUMBER ??
+    workspaceNumber?.phoneNumber;
 
   if (!fromNumber || !E164_REGEX.test(fromNumber)) {
     return {

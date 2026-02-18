@@ -3,6 +3,12 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
+import {
+  hasOutboundMarker,
+  OUTBOUND_CALLER_ID_MARKER,
+  stripOutboundMarker,
+  withOutboundMarker,
+} from "@/lib/voice/outbound-number";
 
 const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema);
@@ -16,6 +22,7 @@ const payloadSchema = z.object({
     .pipe(z.string().regex(/^\+[1-9]\d{6,14}$/, "Phone must be E.164 format (e.g. +15551234567).")),
   friendlyName: emptyToUndefined(z.string().trim().max(80).optional()),
   isActive: z.boolean().default(true),
+  setOutbound: z.boolean().optional().default(false),
 });
 
 export async function GET() {
@@ -26,7 +33,13 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ ok: true, data: numbers });
+    const normalized = numbers.map((item) => ({
+      ...item,
+      isOutbound: hasOutboundMarker(item.friendlyName),
+      friendlyName: stripOutboundMarker(item.friendlyName),
+    }));
+
+    return NextResponse.json({ ok: true, data: normalized });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ ok: false, error: { message: "Unauthorized" } }, { status: 401 });
@@ -72,24 +85,67 @@ export async function POST(request: Request) {
       );
     }
 
+    const friendlyName = parsed.data.setOutbound
+      ? withOutboundMarker(parsed.data.friendlyName ?? null)
+      : parsed.data.friendlyName;
+
     const item = await db.twilioPhoneNumber.upsert({
       where: {
         phoneNumber: parsed.data.phoneNumber,
       },
       update: {
         workspaceId,
-        friendlyName: parsed.data.friendlyName,
+        friendlyName,
         isActive: parsed.data.isActive,
       },
       create: {
         workspaceId,
         phoneNumber: parsed.data.phoneNumber,
-        friendlyName: parsed.data.friendlyName,
+        friendlyName,
         isActive: parsed.data.isActive,
       },
     });
 
-    return NextResponse.json({ ok: true, data: item }, { status: 201 });
+    if (parsed.data.setOutbound) {
+      const existing = await db.twilioPhoneNumber.findMany({
+        where: {
+          workspaceId,
+          NOT: {
+            id: item.id,
+          },
+        },
+        select: {
+          id: true,
+          friendlyName: true,
+        },
+      });
+
+      await Promise.all(
+        existing
+          .filter((entry) => hasOutboundMarker(entry.friendlyName))
+          .map((entry) =>
+            db.twilioPhoneNumber.update({
+              where: { id: entry.id },
+              data: {
+                friendlyName: stripOutboundMarker(entry.friendlyName),
+              },
+            }),
+          ),
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          ...item,
+          isOutbound: hasOutboundMarker(item.friendlyName),
+          friendlyName: stripOutboundMarker(item.friendlyName),
+          outboundMarker: OUTBOUND_CALLER_ID_MARKER,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "P2002") {
       return NextResponse.json(

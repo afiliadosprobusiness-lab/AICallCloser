@@ -1,3 +1,4 @@
+import { OutboundCallerIdForm } from "@/components/app/outbound-caller-id-form";
 import { TwilioNumberForm } from "@/components/app/twilio-number-form";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { db } from "@/lib/db";
@@ -6,6 +7,7 @@ import { translate } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
 import { getVoiceProvider } from "@/lib/voice/provider";
+import { hasOutboundMarker, stripOutboundMarker } from "@/lib/voice/outbound-number";
 
 export default async function SettingsPage() {
   const locale = await getRequestLocale();
@@ -89,6 +91,8 @@ export default async function SettingsPage() {
   const readinessScore = Math.round(
     (checklistItems.filter((item) => item.done).length / checklistItems.length) * 100,
   );
+  const outboundNumber =
+    numbers.find((item) => hasOutboundMarker(item.friendlyName))?.phoneNumber ?? null;
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -162,6 +166,25 @@ export default async function SettingsPage() {
         </div>
       </PremiumCard>
 
+      {voiceProvider === "twilio" ? (
+        <PremiumCard className="space-y-4 p-4 md:p-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Caller ID salida", "Outbound caller ID")}</p>
+            <h2 className="mt-1 text-lg font-semibold text-[#F5F3EE]">{t("Numero para Test Call outbound", "Number for outbound Test Call")}</h2>
+          </div>
+          <OutboundCallerIdForm
+            settingsEndpoint={settingsEndpoint}
+            providerLabel={providerLabel}
+            initialValue={outboundNumber ?? undefined}
+          />
+          {outboundNumber ? (
+            <p className="text-xs text-[#E5C76B]">
+              {t("Numero outbound activo", "Active outbound number")}: {outboundNumber}
+            </p>
+          ) : null}
+        </PremiumCard>
+      ) : null}
+
       <PremiumCard className="space-y-4 p-4 md:p-5">
         <div>
           <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">
@@ -181,9 +204,20 @@ export default async function SettingsPage() {
               >
                 <div>
                   <p className="text-sm text-[#F5F3EE]">{number.phoneNumber}</p>
-                  <p className="text-xs text-[#A7A296]">{number.friendlyName ?? t("Sin alias", "No alias")}</p>
+                  <p className="text-xs text-[#A7A296]">
+                    {stripOutboundMarker(number.friendlyName) ?? t("Sin alias", "No alias")}
+                  </p>
                 </div>
-                <span className="text-xs text-[#E5C76B]">{number.isActive ? t("Activo", "Active") : t("Inactivo", "Inactive")}</span>
+                <div className="flex items-center gap-2">
+                  {hasOutboundMarker(number.friendlyName) ? (
+                    <span className="rounded-full border border-[#6FA8FF]/40 bg-[#6FA8FF]/15 px-2 py-0.5 text-[10px] text-[#CFE2FF]">
+                      {t("Outbound", "Outbound")}
+                    </span>
+                  ) : null}
+                  <span className="text-xs text-[#E5C76B]">
+                    {number.isActive ? t("Activo", "Active") : t("Inactivo", "Inactive")}
+                  </span>
+                </div>
               </div>
             ))
           )}

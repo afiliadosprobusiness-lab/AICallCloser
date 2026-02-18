@@ -149,10 +149,11 @@ Salida programática (botón Test Call):
    - **A call comes in**: `POST https://TU_URL/api/twilio/voice/inbound`
    - **Call status changes**: `POST https://TU_URL/api/twilio/voice/status`
 3. En el dashboard (`/dashboard`), en **Test Call**, ingresa destino en formato E.164 (`+51...`) y pulsa **Start call**.
-4. Verifica en Twilio Monitor:
+4. En `Ajustes` puedes marcar el **Outbound Caller ID** del workspace. Ese número se prioriza para Test Call.
+5. Verifica en Twilio Monitor:
    - Request 200 a `/api/twilio/voice/outbound`
    - Callback 200 a `/api/twilio/voice/status`
-5. En trial de Twilio, el destino debe estar en **Verified Caller IDs**; si no, la UI mostrará:
+6. En trial de Twilio, el destino debe estar en **Verified Caller IDs**; si no, la UI mostrará:
    - `Twilio Trial: verify the destination number in Verified Caller IDs.`
 
 ## Flujo MVP implementado
