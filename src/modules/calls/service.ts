@@ -1,4 +1,4 @@
-﻿import { CallOutcome, CallStatus, LeadStatus, Prisma, TranscriptSpeaker } from "@prisma/client";
+﻿import { CallObjective, CallOutcome, CallStatus, LeadStatus, Prisma, TranscriptSpeaker } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { type AIDecision } from "@/lib/ai/types";
@@ -87,6 +87,10 @@ export async function applyDecisionToCall(params: {
   callId: string;
   decision: AIDecision;
   handoffPhone?: string | null;
+  outcomeOverride?: CallOutcome;
+  leadStatusOverride?: LeadStatus;
+  objectiveApplied?: CallObjective;
+  leadCustomFields?: Record<string, unknown>;
 }) {
   const call = await db.call.findFirst({
     where: {
@@ -109,6 +113,14 @@ export async function applyDecisionToCall(params: {
     not_qualified: LeadStatus.unqualified,
     follow_up: LeadStatus.new,
     unknown: LeadStatus.new,
+    sold: LeadStatus.won,
+    booked_meeting: LeadStatus.scheduled,
+    booked_google_meet: LeadStatus.scheduled,
+    followup_scheduled: LeadStatus.scheduled,
+    info_collected: LeadStatus.qualified,
+    transferred: LeadStatus.handed_off,
+    not_interested: LeadStatus.lost,
+    disqualified: LeadStatus.unqualified,
   };
 
   const callOutcomeMap: Record<string, CallOutcome> = {
@@ -119,8 +131,23 @@ export async function applyDecisionToCall(params: {
     follow_up: CallOutcome.follow_up,
   };
 
+  const nextOutcome = params.outcomeOverride ?? callOutcomeMap[params.decision.action] ?? CallOutcome.unknown;
+
   const nextLeadStatus =
-    params.decision.leadUpdates.status ?? leadStatusMap[callOutcomeMap[params.decision.action]];
+    params.leadStatusOverride ??
+    params.decision.leadUpdates.status ??
+    leadStatusMap[nextOutcome] ??
+    LeadStatus.new;
+
+  const mergedCustomFields =
+    params.leadCustomFields && Object.keys(params.leadCustomFields).length > 0
+      ? {
+          ...(typeof call.lead.customFields === "object" && call.lead.customFields !== null
+            ? (call.lead.customFields as Record<string, unknown>)
+            : {}),
+          ...params.leadCustomFields,
+        }
+      : undefined;
 
   await db.$transaction(async (tx) => {
     await tx.lead.update({
@@ -134,13 +161,15 @@ export async function applyDecisionToCall(params: {
           increment: params.decision.leadUpdates.scoreDelta,
         },
         status: nextLeadStatus,
+        customFields: (mergedCustomFields as Prisma.InputJsonValue | undefined) ?? undefined,
       },
     });
 
     await tx.call.update({
       where: { id: call.id },
       data: {
-        outcome: callOutcomeMap[params.decision.action],
+        outcome: nextOutcome,
+        objectiveApplied: params.objectiveApplied,
       },
     });
 

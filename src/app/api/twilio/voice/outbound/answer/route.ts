@@ -3,6 +3,7 @@ import { signTtsPayload } from "@/lib/voice/token";
 import { buildPromptAndRecordVoiceXml } from "@/lib/voice/xml";
 import { xmlResponse } from "@/lib/voice/webhook-response";
 import { getWorkspaceSummary } from "@/lib/workspace";
+import { buildCallObjectivePlaybook, deserializePreferences } from "@/modules/call-objectives/service";
 import { appendTranscriptTurn, createInboundCall } from "@/modules/calls/service";
 
 export async function POST(request: Request) {
@@ -23,7 +24,13 @@ export async function POST(request: Request) {
   }
 
   const workspace = await getWorkspaceSummary(workspaceId);
-  const greeting = workspace?.agentConfig?.greetingMessage ?? fallbackPrompt;
+  const preferences = deserializePreferences(workspace?.callPreferences);
+  const playbook = buildCallObjectivePlaybook({
+    agentName: workspace?.agentConfig?.agentName ?? "Aurea Assistant",
+    valueProp: workspace?.businessProfile?.valueProp ?? "",
+    preferences,
+  });
+  const greeting = workspace?.agentConfig?.greetingMessage ?? playbook.opening ?? fallbackPrompt;
 
   let callId: string | null = null;
 

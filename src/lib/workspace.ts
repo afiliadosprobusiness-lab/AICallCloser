@@ -36,6 +36,28 @@ export async function getWorkspaceSummary(workspaceId: string) {
           disallowedClaims: true,
         },
       },
+      callPreferences: {
+        select: {
+          primaryObjective: true,
+          secondaryObjectives: true,
+          language: true,
+          meetingType: true,
+          durationMinutes: true,
+          locationText: true,
+          calendarProvider: true,
+          calendarUrl: true,
+          followupAllowedWindows: true,
+          maxFollowups: true,
+          leadFieldsRequired: true,
+          disqualifyRules: true,
+          complianceRules: true,
+        },
+      },
+      businessProfile: {
+        select: {
+          valueProp: true,
+        },
+      },
     },
   });
 }

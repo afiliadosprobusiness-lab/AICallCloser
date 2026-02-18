@@ -1,9 +1,10 @@
-import { CallStatus } from "@prisma/client";
+﻿import { CallStatus } from "@prisma/client";
 
+import { generateAssistantDecision } from "@/lib/ai/orchestrator";
+import { deserializePreferences, buildCallObjectivePlaybook, applyReplyCompliance, resolveObjectiveDecision, executeObjectiveSuccess } from "@/modules/call-objectives/service";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { verifyPlivoSignature } from "@/lib/plivo/security";
-import { generateAssistantDecision } from "@/lib/ai/orchestrator";
 import { verifyTwilioSignature } from "@/lib/twilio/security";
 import { signTtsPayload } from "@/lib/voice/token";
 import { transcribeVoiceRecording } from "@/lib/voice/stt";
@@ -173,7 +174,7 @@ export async function handleInboundVoiceWebhook(provider: VoiceProvider, request
 
     if (!workspacePhone) {
       return xmlResponse(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>No hay agente configurado para este numero.</Speak><Hangup/></Response>",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>No AI agent is configured for this number.</Speak><Hangup/></Response>",
       );
     }
 
@@ -186,10 +187,17 @@ export async function handleInboundVoiceWebhook(provider: VoiceProvider, request
     const call = inbound.call;
 
     const workspace = await getWorkspaceSummary(workspacePhone.workspaceId);
+    const preferences = deserializePreferences(workspace?.callPreferences);
+    const playbook = buildCallObjectivePlaybook({
+      agentName: workspace?.agentConfig?.agentName ?? "Aurea Assistant",
+      valueProp: workspace?.businessProfile?.valueProp ?? "",
+      preferences,
+    });
 
     const greeting =
-      workspace?.agentConfig?.greetingMessage ??
-      "Hola, soy el asistente virtual del equipo. Voy a ayudarte a calificar y agendar en menos de un minuto.";
+      workspace?.agentConfig?.greetingMessage ||
+      playbook.opening ||
+      "Hello, this is your virtual assistant. I'll ask a few quick qualification questions.";
 
     if (inbound.isNew) {
       await appendTranscriptTurn({
@@ -202,6 +210,8 @@ export async function handleInboundVoiceWebhook(provider: VoiceProvider, request
           callSid,
           from,
           to,
+          primaryObjective: preferences.primaryObjective,
+          secondaryObjectives: preferences.secondaryObjectives,
         },
       });
     }
@@ -233,7 +243,7 @@ export async function handleInboundVoiceWebhook(provider: VoiceProvider, request
     logger.error({ error, provider }, "Voice inbound failed");
 
     return xmlResponse(
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>Ocurrio un error al conectar el agente.</Speak><Hangup/></Response>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>There was an error connecting the AI assistant.</Speak><Hangup/></Response>",
     );
   }
 }
@@ -259,7 +269,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     if (!workspace?.agentConfig) {
       return xmlResponse(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>No hay configuracion de agente disponible.</Speak><Hangup/></Response>",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>No AI configuration available.</Speak><Hangup/></Response>",
       );
     }
 
@@ -267,9 +277,16 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     if (!call) {
       return xmlResponse(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>No se encontro la llamada activa.</Speak><Hangup/></Response>",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>Active call not found.</Speak><Hangup/></Response>",
       );
     }
+
+    const preferences = deserializePreferences(workspace.callPreferences);
+    const playbook = buildCallObjectivePlaybook({
+      agentName: workspace.agentConfig.agentName,
+      valueProp: workspace.businessProfile?.valueProp ?? "",
+      preferences,
+    });
 
     const providerCallId = getCallIdentifier(params);
     let leadText = "";
@@ -284,7 +301,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
     }
 
     if (!leadText) {
-      leadText = "No escuche respuesta clara";
+      leadText = "No clear response was captured.";
     }
 
     await appendTranscriptTurn({
@@ -299,7 +316,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       },
     });
 
-    const decision = await generateAssistantDecision({
+    const baseDecision = await generateAssistantDecision({
       userText: leadText,
       transcript: call.transcripts.map((turn) => ({
         speaker: turn.speaker,
@@ -312,31 +329,82 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
         pricingRules: workspace.agentConfig.pricingRules,
         handoffEnabled: workspace.agentConfig.handoffEnabled,
         llmModel: workspace.agentConfig.llmModel,
+        objectivePlaybook: [
+          `Opening: ${playbook.opening}`,
+          `Qualify: ${playbook.qualifyQuestions.join(" | ")}`,
+          `Primary objective (${playbook.primaryObjective}): ${playbook.objectivePrompt}`,
+          `Fallback objective (${playbook.fallbackObjective}): ${playbook.fallbackPrompt}`,
+          `Compliance: ${playbook.complianceBullets.join(" | ")}`,
+        ].join("\n"),
+        complianceRules: preferences.complianceRules,
+        primaryObjective: preferences.primaryObjective,
+        secondaryObjectives: preferences.secondaryObjectives,
       },
     });
+
+    const { adjustedDecision, resolution } = resolveObjectiveDecision({
+      userText: leadText,
+      decision: baseDecision,
+      preferences,
+    });
+
+    const finalDecision = applyReplyCompliance({
+      decision: adjustedDecision,
+      preferences,
+    });
+
+    const objectiveResult = resolution.runSuccessAction
+      ? await executeObjectiveSuccess({
+          objective: resolution.objective,
+          workspaceId,
+          callId,
+          leadId: call.leadId ?? null,
+          leadText,
+          decision: finalDecision,
+          preferences,
+          handoffPhone: workspace.agentConfig.handoffPhone,
+          calendarFallbackUrl: workspace.agentConfig.calendarLink,
+        })
+      : {
+          outcomeCode: resolution.outcome,
+          leadStatusOverride: resolution.leadStatusOverride,
+          shouldClose: resolution.shouldClose,
+          shouldHandoff: resolution.shouldHandoff,
+        };
 
     await appendTranscriptTurn({
       workspaceId,
       callId,
       speaker: "assistant",
-      text: decision.assistantReply,
+      text: finalDecision.assistantReply,
       metadata: {
-        action: decision.action,
-        confidence: decision.confidence,
+        action: finalDecision.action,
+        confidence: finalDecision.confidence,
+        objective: resolution.objective,
+        fallbackApplied: resolution.usedFallback,
+        outcome: objectiveResult.outcomeCode ?? resolution.outcome,
       },
     });
 
     await applyDecisionToCall({
       workspaceId,
       callId,
-      decision,
+      decision: finalDecision,
       handoffPhone: workspace.agentConfig.handoffPhone,
+      outcomeOverride: objectiveResult.outcomeCode ?? resolution.outcome,
+      leadStatusOverride: objectiveResult.leadStatusOverride ?? resolution.leadStatusOverride,
+      objectiveApplied: resolution.objective,
     });
 
     const voiceModel = workspace.agentConfig.voiceModel;
     const ttsVoice = workspace.agentConfig.ttsVoice;
 
-    if (decision.action === "handoff" && workspace.agentConfig.handoffEnabled) {
+    const shouldHandoff =
+      (objectiveResult.shouldHandoff ?? resolution.shouldHandoff) &&
+      workspace.agentConfig.handoffEnabled &&
+      Boolean(workspace.agentConfig.handoffPhone || env.HUMAN_HANDOFF_PHONE);
+
+    if (shouldHandoff) {
       if (providerCallId) {
         await completeCall({
           workspaceId,
@@ -346,7 +414,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       }
 
       const handoffAudioUrl = buildAudioUrl({
-        text: decision.assistantReply,
+        text: finalDecision.assistantReply,
         workspaceId,
         voice: ttsVoice,
         model: voiceModel,
@@ -354,14 +422,17 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
       const xml = buildHandoffVoiceXml(provider, {
         handoffAudioUrl,
-        handoffText: decision.assistantReply,
+        handoffText: finalDecision.assistantReply,
         targetPhone: workspace.agentConfig.handoffPhone ?? env.HUMAN_HANDOFF_PHONE ?? "",
       });
 
       return xmlResponse(xml);
     }
 
-    const shouldClose = decision.action === "close" || decision.action === "schedule";
+    const shouldClose =
+      (objectiveResult.shouldClose ?? resolution.shouldClose ?? false) ||
+      finalDecision.action === "close" ||
+      finalDecision.action === "schedule";
 
     if (shouldClose) {
       if (providerCallId) {
@@ -373,7 +444,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       }
 
       const finalAudioUrl = buildAudioUrl({
-        text: decision.assistantReply,
+        text: finalDecision.assistantReply,
         workspaceId,
         voice: ttsVoice,
         model: voiceModel,
@@ -381,14 +452,14 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
       const xml = buildGoodbyeVoiceXml(provider, {
         finalAudioUrl,
-        finalText: decision.assistantReply,
+        finalText: finalDecision.assistantReply,
       });
 
       return xmlResponse(xml);
     }
 
     const continueAudioUrl = buildAudioUrl({
-      text: decision.assistantReply,
+      text: finalDecision.assistantReply,
       workspaceId,
       voice: ttsVoice,
       model: voiceModel,
@@ -398,7 +469,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     const xml = buildPromptAndRecordVoiceXml(provider, {
       promptAudioUrl: continueAudioUrl,
-      promptText: decision.assistantReply,
+      promptText: finalDecision.assistantReply,
       actionUrl,
       maxLengthSeconds: 25,
     });
@@ -408,7 +479,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
     logger.error({ error, provider }, "Voice process failed");
 
     return xmlResponse(
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>Ocurrio un error procesando la llamada.</Speak><Hangup/></Response>",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>There was an error processing this call.</Speak><Hangup/></Response>",
     );
   }
 }

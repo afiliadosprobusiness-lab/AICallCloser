@@ -48,11 +48,13 @@
 - Terminal call closure is idempotent: ended calls are not overwritten by repeated provider callbacks.
 - Twilio now has full parity for outbound calls via `/api/twilio/voice/outbound` and `/api/twilio/voice/outbound/answer`.
 - Settings screen now adapts webhook and provider labels dynamically based on `VOICE_PROVIDER` (`telnyx`, `twilio`, `plivo`).
+- Voice runtime now loads dynamic call objectives per workspace and injects playbook instructions into LLM turn orchestration.
 
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.
 - Telephony number form now shows explicit success/error state after submit.
 - Forgot password now handles `delivered=false` correctly as UI error (instead of success style message).
+- Agent settings now include a full `Call Objectives` builder with primary/secondary objectives, meeting/follow-up config, lead field builder, disqualify/compliance JSON, and live playbook preview.
 
 ## Password Recovery
 - If `RESEND_API_KEY` + `RESEND_FROM_EMAIL` are configured, password reset uses internal token flow (`/reset-password?token=...`).
@@ -71,4 +73,40 @@
 - A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
 - Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.
 - Testimonials rail now includes smooth autoplay, page indicators, and progressive lazy rendering/image loading for better mobile performance.
+
+## Call Objectives Engine
+- New persistence model:
+  - `AgentCallPreferences` (primary objective, secondary objectives, language, meeting config, follow-up config, lead fields, disqualify/compliance rules).
+  - `BusinessProfile` (workspace value proposition used for playbook generation).
+- Objective handlers implemented with module contracts:
+  - `requiredInputs()`
+  - `promptTemplate()`
+  - `successAction()`
+  - `outcomeCode`
+- Minimum objective modules:
+  - `sell_product`
+  - `book_in_person_meeting`
+  - `book_google_meet`
+  - `book_calcom_appointment`
+  - `schedule_followup_call`
+  - `collect_lead_info`
+  - `transfer_to_human`
+- Dynamic playbook flow per call:
+  - opening (<=30s)
+  - qualification (max 4 prompts)
+  - primary objective close
+  - fallback objective resolution (follow-up or transfer)
+- Guardrails now enforce:
+  - strict no-price-invention fallback message
+  - concise answers via max words rule
+  - quick polite close on non-interest
+- New outcomes supported in `CallOutcome`:
+  - `sold`
+  - `booked_meeting`
+  - `booked_google_meet`
+  - `followup_scheduled`
+  - `info_collected`
+  - `transferred`
+  - `not_interested`
+  - `disqualified`
 

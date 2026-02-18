@@ -1,5 +1,7 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient, WorkspaceMemberRole } from "@prisma/client";
+import { defaultCallPreferences } from "@/lib/call-objectives/config";
+import { serializePreferences } from "@/modules/call-objectives/service";
 
 const prisma = new PrismaClient();
 
@@ -106,6 +108,26 @@ async function main() {
       phoneNumber: "+15559990000",
       friendlyName: "Demo Inbound",
       isActive: true,
+    },
+  });
+
+  await prisma.agentCallPreferences.upsert({
+    where: { workspaceId: workspace.id },
+    update: serializePreferences(defaultCallPreferences),
+    create: {
+      workspaceId: workspace.id,
+      ...serializePreferences(defaultCallPreferences),
+    },
+  });
+
+  await prisma.businessProfile.upsert({
+    where: { workspaceId: workspace.id },
+    update: {
+      valueProp: "Convert inbound calls into qualified opportunities in under 60 seconds.",
+    },
+    create: {
+      workspaceId: workspace.id,
+      valueProp: "Convert inbound calls into qualified opportunities in under 60 seconds.",
     },
   });
 

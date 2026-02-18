@@ -38,6 +38,43 @@ enum CallOutcome {
   handoff
   not_qualified
   follow_up
+  sold
+  booked_meeting
+  booked_google_meet
+  followup_scheduled
+  info_collected
+  transferred
+  not_interested
+  disqualified
+}
+
+enum CallObjective {
+  sell_product
+  book_in_person_meeting
+  book_google_meet
+  book_calcom_appointment
+  schedule_followup_call
+  collect_lead_info
+  qualify_only
+  transfer_to_human
+  send_summary
+}
+
+enum AgentLanguage {
+  en
+  es
+}
+
+enum MeetingType {
+  in_person
+  google_meet
+  phone_call
+}
+
+enum CalendarProvider {
+  calcom
+  google
+  manual
 }
 
 enum TranscriptSpeaker {
@@ -109,6 +146,8 @@ model Workspace {
   appointments  Appointment[]
   handoffs      Handoff[]
   metricsDaily  MetricDaily[]
+  callPreferences AgentCallPreferences?
+  businessProfile BusinessProfile?
 
   @@index([ownerId])
 }
@@ -172,6 +211,7 @@ model Lead {
   phone      String?
   company    String?
   notes      String?
+  customFields Json?
   score      Int        @default(0)
   status     LeadStatus @default(new)
   source     String     @default("inbound_call")
@@ -200,6 +240,7 @@ model Call {
   outcome        CallOutcome @default(unknown)
   durationSeconds Int?
   summary        String?
+  objectiveApplied CallObjective?
   startedAt      DateTime    @default(now())
   endedAt        DateTime?
   createdAt      DateTime    @default(now())
@@ -240,6 +281,11 @@ model Appointment {
   callId      String?  @unique
   startsAt    DateTime
   timezone    String   @default("America/New_York")
+  meetingType MeetingType @default(phone_call)
+  calendarProvider CalendarProvider @default(manual)
+  meetingUrl  String?
+  locationText String?
+  bookingIntent Json?
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -250,6 +296,38 @@ model Appointment {
 
   @@index([workspaceId, startsAt])
   @@index([leadId, startsAt])
+}
+
+model AgentCallPreferences {
+  id                    String           @id @default(cuid())
+  workspaceId           String           @unique
+  primaryObjective      CallObjective    @default(qualify_only)
+  secondaryObjectives   CallObjective[]
+  language              AgentLanguage    @default(en)
+  meetingType           MeetingType      @default(phone_call)
+  durationMinutes       Int              @default(30)
+  locationText          String?
+  calendarProvider      CalendarProvider @default(manual)
+  calendarUrl           String?
+  followupAllowedWindows String[]        @default([])
+  maxFollowups          Int              @default(2)
+  leadFieldsRequired    Json
+  disqualifyRules       Json
+  complianceRules       Json
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model BusinessProfile {
+  id         String   @id @default(cuid())
+  workspaceId String  @unique
+  valueProp  String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model Handoff {

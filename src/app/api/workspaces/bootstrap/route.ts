@@ -2,9 +2,11 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { defaultCallPreferences } from "@/lib/call-objectives/config";
 import { slugifyWorkspaceName } from "@/lib/slug";
 import { getSessionOrThrow } from "@/lib/session";
 import { getAdminEmails } from "@/lib/admin";
+import { serializePreferences } from "@/modules/call-objectives/service";
 
 const payloadSchema = z.object({
   name: z.string().min(2).max(80),
@@ -98,6 +100,20 @@ export async function POST(request: Request) {
             "No prometer garantias",
             "No afirmar que eres humano",
           ],
+        },
+      });
+
+      await tx.agentCallPreferences.create({
+        data: {
+          workspaceId: createdWorkspace.id,
+          ...serializePreferences(defaultCallPreferences),
+        },
+      });
+
+      await tx.businessProfile.create({
+        data: {
+          workspaceId: createdWorkspace.id,
+          valueProp: "We help teams convert inbound calls into booked revenue conversations.",
         },
       });
 

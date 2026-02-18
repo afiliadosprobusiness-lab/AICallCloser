@@ -1,7 +1,7 @@
 ﻿import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 import { getOpenAIClient } from "@/lib/ai/client";
-import { enforcePricingGuardrail, normalizeAssistantReply } from "@/lib/ai/guardrails";
+import { enforcePricingGuardrail, limitReplyWords, normalizeAssistantReply } from "@/lib/ai/guardrails";
 import { aiDecisionSchema, type AIDecision } from "@/lib/ai/types";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -18,6 +18,10 @@ type AgentConfigInput = {
   pricingRules: unknown;
   llmModel?: string;
   handoffEnabled: boolean;
+  objectivePlaybook?: string;
+  complianceRules?: Record<string, unknown>;
+  primaryObjective?: string;
+  secondaryObjectives?: string[];
 };
 
 export async function generateAssistantDecision(params: {
@@ -41,6 +45,13 @@ export async function generateAssistantDecision(params: {
     `Checklist de calificacion: ${JSON.stringify(params.config.qualificationChecklist)}`,
     `Claims prohibidos: ${JSON.stringify(params.config.disallowedClaims)}`,
     `Pricing rules: ${JSON.stringify(params.config.pricingRules)}`,
+    `Primary objective: ${params.config.primaryObjective ?? "qualify_only"}`,
+    `Secondary objectives: ${JSON.stringify(params.config.secondaryObjectives ?? [])}`,
+    `Dynamic playbook:\n${params.config.objectivePlaybook ?? "N/A"}`,
+    `Compliance rules: ${JSON.stringify(params.config.complianceRules ?? {})}`,
+    "Qualification questions max: 4",
+    "If not interested, end call quickly and politely.",
+    "Keep every assistant reply concise (max 20 words unless necessary).",
     "Devuelve SOLO JSON valido con el esquema solicitado.",
   ].join("\n");
 
@@ -107,7 +118,10 @@ export async function generateAssistantDecision(params: {
 
   return {
     ...parsed.data,
-    assistantReply: normalizeAssistantReply(parsed.data.assistantReply),
+    assistantReply: limitReplyWords(
+      normalizeAssistantReply(parsed.data.assistantReply),
+      Number((params.config.complianceRules ?? {}).maxReplyWords ?? 20),
+    ),
   };
 }
 

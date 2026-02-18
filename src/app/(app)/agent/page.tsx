@@ -1,16 +1,23 @@
 import { AgentConfigForm } from "@/components/app/agent-config-form";
+import { CallObjectivesForm } from "@/components/app/call-objectives-form";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { db } from "@/lib/db";
+import { defaultCallPreferences } from "@/lib/call-objectives/config";
 import { translate } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
+import { deserializePreferences, getBusinessValueProp } from "@/modules/call-objectives/service";
 
 export default async function AgentPage() {
   const locale = await getRequestLocale();
   const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId } = await getWorkspaceContextOrThrow();
 
-  const config = await db.agentConfig.findUnique({ where: { workspaceId } });
+  const [config, rawPreferences, businessValueProp] = await Promise.all([
+    db.agentConfig.findUnique({ where: { workspaceId } }),
+    db.agentCallPreferences.findUnique({ where: { workspaceId } }),
+    getBusinessValueProp(workspaceId),
+  ]);
 
   if (!config) {
     return (
@@ -45,6 +52,14 @@ export default async function AgentPage() {
             disallowedClaims: asStringArray(config.disallowedClaims),
             pricingRules: asObject(config.pricingRules),
           }}
+        />
+      </PremiumCard>
+
+      <PremiumCard className="p-4 md:p-5">
+        <CallObjectivesForm
+          initialPreferences={rawPreferences ? deserializePreferences(rawPreferences) : defaultCallPreferences}
+          initialValueProp={businessValueProp}
+          agentName={config.agentName}
         />
       </PremiumCard>
     </div>
