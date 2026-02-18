@@ -24,9 +24,40 @@ export default async function SettingsPage() {
   const outboundPath = `/api/${voiceProvider}/voice/outbound`;
 
   const [workspace, numbers, config] = await Promise.all([
-    db.workspace.findUnique({ where: { id: workspaceId } }),
-    db.twilioPhoneNumber.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" } }),
-    db.agentConfig.findUnique({ where: { workspaceId } }),
+    db.workspace
+      .findUnique({
+        where: { id: workspaceId },
+        select: {
+          name: true,
+          slug: true,
+        },
+      })
+      .catch(() => null),
+    db.twilioPhoneNumber
+      .findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          phoneNumber: true,
+          friendlyName: true,
+          isActive: true,
+        },
+      })
+      .catch(() => []),
+    db.agentConfig
+      .findUnique({
+        where: { workspaceId },
+        select: {
+          greetingMessage: true,
+          qualificationChecklist: true,
+          systemPrompt: true,
+          handoffEnabled: true,
+          handoffPhone: true,
+          calendarLink: true,
+        },
+      })
+      .catch(() => null),
   ]);
 
   const checklistItems = [

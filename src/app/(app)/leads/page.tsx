@@ -18,7 +18,10 @@ export default async function LeadsPage() {
   const locale = await getRequestLocale();
   const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId } = await getWorkspaceContextOrThrow();
-  const leads = await listLeadsByWorkspace(workspaceId);
+  const leads = await listLeadsByWorkspace(workspaceId).catch((error) => {
+    console.error("[leads] failed to load", error);
+    return [];
+  });
 
   return (
     <div className="space-y-4 md:space-y-6">

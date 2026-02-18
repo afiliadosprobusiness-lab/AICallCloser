@@ -5,10 +5,20 @@ export async function listLeadsByWorkspace(workspaceId: string) {
     where: { workspaceId },
     orderBy: { createdAt: "desc" },
     take: 100,
-    include: {
+    select: {
+      id: true,
+      fullName: true,
+      phone: true,
+      score: true,
+      status: true,
+      updatedAt: true,
       calls: {
         orderBy: { startedAt: "desc" },
         take: 1,
+        select: {
+          id: true,
+          startedAt: true,
+        },
       },
     },
   });

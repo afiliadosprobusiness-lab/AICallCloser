@@ -14,9 +14,26 @@ export default async function AgentPage() {
   const { workspaceId } = await getWorkspaceContextOrThrow();
 
   const [config, rawPreferences, businessValueProp] = await Promise.all([
-    db.agentConfig.findUnique({ where: { workspaceId } }),
-    db.agentCallPreferences.findUnique({ where: { workspaceId } }),
-    getBusinessValueProp(workspaceId),
+    db.agentConfig.findUnique({
+      where: { workspaceId },
+      select: {
+        agentName: true,
+        greetingMessage: true,
+        systemPrompt: true,
+        handoffEnabled: true,
+        handoffPhone: true,
+        calendarLink: true,
+        llmModel: true,
+        sttModel: true,
+        voiceModel: true,
+        ttsVoice: true,
+        qualificationChecklist: true,
+        disallowedClaims: true,
+        pricingRules: true,
+      },
+    }),
+    db.agentCallPreferences.findUnique({ where: { workspaceId } }).catch(() => null),
+    getBusinessValueProp(workspaceId).catch(() => ""),
   ]);
 
   if (!config) {

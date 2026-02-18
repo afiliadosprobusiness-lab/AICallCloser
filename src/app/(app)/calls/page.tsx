@@ -19,17 +19,35 @@ export default async function CallsPage({
   const { workspaceId } = await getWorkspaceContextOrThrow();
   const params = await searchParams;
 
-  const calls = await db.call.findMany({
-    where: { workspaceId },
-    include: {
-      lead: true,
-      transcripts: {
-        orderBy: { spokenAt: "asc" },
+  const calls = await db.call
+    .findMany({
+      where: { workspaceId },
+      select: {
+        id: true,
+        fromNumber: true,
+        startedAt: true,
+        outcome: true,
+        lead: {
+          select: {
+            phone: true,
+          },
+        },
+        transcripts: {
+          orderBy: { spokenAt: "asc" },
+          select: {
+            id: true,
+            speaker: true,
+            text: true,
+          },
+        },
       },
-    },
-    orderBy: { startedAt: "desc" },
-    take: 30,
-  });
+      orderBy: { startedAt: "desc" },
+      take: 30,
+    })
+    .catch((error) => {
+      console.error("[calls] failed to load", error);
+      return [];
+    });
 
   const selectedCall =
     calls.find((call) => call.id === params.callId) ?? calls[0] ?? null;

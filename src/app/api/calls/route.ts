@@ -9,10 +9,29 @@ export async function GET() {
 
     const calls = await db.call.findMany({
       where: { workspaceId },
-      include: {
-        lead: true,
+      select: {
+        id: true,
+        workspaceId: true,
+        fromNumber: true,
+        toNumber: true,
+        startedAt: true,
+        status: true,
+        outcome: true,
+        lead: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+          },
+        },
         transcripts: {
           orderBy: { spokenAt: "asc" },
+          select: {
+            id: true,
+            speaker: true,
+            text: true,
+            spokenAt: true,
+          },
         },
       },
       orderBy: { startedAt: "desc" },
