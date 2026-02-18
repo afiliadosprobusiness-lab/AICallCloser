@@ -1,23 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   CalendarClock,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Lock,
+  MessageSquareQuote,
   PhoneCall,
   ShieldCheck,
   Sparkles,
+  Star,
   UserRoundCheck,
 } from "lucide-react";
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { useLocale } from "@/components/providers/locale-provider";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +35,20 @@ type SimpleSession = {
   };
 };
 
+type Testimonial = {
+  name: string;
+  role: string;
+  company: string;
+  rating: 4 | 5;
+  quote: string;
+  avatar: string;
+};
+
+type FaqItem = {
+  question: string;
+  answer: string;
+};
+
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
   show: { opacity: 1, y: 0 },
@@ -39,6 +57,9 @@ const fadeUp = {
 export default function HomePage() {
   const { t } = useLocale();
   const [session, setSession] = useState<SimpleSession | null>(null);
+  const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
+  const testimonialTrackRef = useRef<HTMLDivElement>(null);
+  const faqTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +215,123 @@ export default function HomePage() {
     [t],
   );
 
+  const testimonials = useMemo<Testimonial[]>(
+    () => [
+      {
+        name: "Olivia Carter",
+        role: t("Directora Comercial", "Commercial Director"),
+        company: "Nova Realty Group",
+        rating: 5,
+        quote: t(
+          "En 30 dias subimos 41% la toma de llamadas y llenamos agenda sin contratar mas recepcion.",
+          "In 30 days we increased answered calls by 41% and filled our calendar without hiring more reception staff.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/44.jpg",
+      },
+      {
+        name: "Marcus Reed",
+        role: t("Fundador", "Founder"),
+        company: "Peak Dental Care",
+        rating: 4,
+        quote: t(
+          "Lo implementamos en una tarde y la IA ya filtra mejor que nuestro flujo manual anterior.",
+          "We deployed it in one afternoon and the AI already qualifies better than our previous manual flow.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/46.jpg",
+      },
+      {
+        name: "Sophia Nguyen",
+        role: t("Head of Growth", "Head of Growth"),
+        company: "Aurora Legal Partners",
+        rating: 5,
+        quote: t(
+          "El handoff inteligente nos da solo contactos con intencion alta. El equipo ahora cierra mas rapido.",
+          "Smart handoff gives us only high-intent contacts. The team now closes faster.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+      },
+      {
+        name: "Daniel Brooks",
+        role: t("Operations Manager", "Operations Manager"),
+        company: "Apex Home Services",
+        rating: 5,
+        quote: t(
+          "Pasamos de perder llamadas fuera de horario a tener pipeline constante todos los dias.",
+          "We went from missing after-hours calls to maintaining a constant daily pipeline.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/64.jpg",
+      },
+      {
+        name: "Emma Rossi",
+        role: t("Sales Leader", "Sales Leader"),
+        company: "Velocity Clinics",
+        rating: 4,
+        quote: t(
+          "La calidad de datos en leads mejoro mucho y el equipo comercial dedica menos tiempo al triage.",
+          "Lead data quality improved a lot and the sales team spends less time on triage.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/39.jpg",
+      },
+    ],
+    [t],
+  );
+
+  const faqItems = useMemo<FaqItem[]>(
+    () => [
+      {
+        question: t(
+          "Cuanto tarda en activarse AI Call Closer?",
+          "How long does it take to activate AI Call Closer?",
+        ),
+        answer: t(
+          "Normalmente entre 5 y 15 minutos: conectas numero, ajustas guion y defines reglas de agenda/handoff.",
+          "Usually between 5 and 15 minutes: connect your number, adjust the script, and define scheduling/handoff rules.",
+        ),
+      },
+      {
+        question: t(
+          "Puedo usar mi numero actual sin cambiar de operador?",
+          "Can I keep my current number without changing carriers?",
+        ),
+        answer: t(
+          "Si. Puedes conectar un numero existente o comprar uno nuevo en Telnyx y enrutar llamadas de inmediato.",
+          "Yes. You can connect your existing number or buy a new one in Telnyx and route calls immediately.",
+        ),
+      },
+      {
+        question: t(
+          "Como evita la IA inventar precios o promesas?",
+          "How does the AI avoid inventing prices or promises?",
+        ),
+        answer: t(
+          "Usamos guardrails por workspace: reglas duras, respuestas permitidas y handoff automatico cuando falta contexto.",
+          "We use workspace guardrails: strict rules, allowed responses, and automatic handoff whenever context is missing.",
+        ),
+      },
+      {
+        question: t(
+          "Que pasa si el lead pide hablar con una persona?",
+          "What happens if a lead asks to talk to a person?",
+        ),
+        answer: t(
+          "La llamada se transfiere al contacto humano definido en Ajustes segun prioridad y horario.",
+          "The call is transferred to the human contact configured in Settings based on priority and schedule.",
+        ),
+      },
+      {
+        question: t(
+          "Donde veo transcripts, leads y conversiones?",
+          "Where can I see transcripts, leads and conversions?",
+        ),
+        answer: t(
+          "Todo queda en tu dashboard: historial de llamadas, estado de lead, transcript y metricas de conversion en tiempo real.",
+          "Everything is in your dashboard: call history, lead status, transcript and real-time conversion metrics.",
+        ),
+      },
+    ],
+    [t],
+  );
+
   const isAuthenticated = Boolean(session?.user?.id);
 
   const primaryHref = useMemo(
@@ -202,6 +340,15 @@ export default function HomePage() {
   );
 
   const primaryLabel = isAuthenticated ? t("Ir al Dashboard", "Go to Dashboard") : t("Crear Cuenta", "Create Account");
+
+  function scrollTrack(track: HTMLDivElement | null, direction: "left" | "right") {
+    if (!track) return;
+    const offset = Math.max(track.clientWidth * 0.84, 280);
+    track.scrollBy({
+      left: direction === "left" ? -offset : offset,
+      behavior: "smooth",
+    });
+  }
 
   return (
     <div className="landing-root relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
@@ -530,6 +677,181 @@ export default function HomePage() {
                 </Card>
               </motion.div>
             ))}
+          </div>
+        </section>
+
+        <section className="scroll-mt-28 px-1 pb-16">
+          <SectionTitle
+            eyebrow={t("Testimonios", "Testimonials")}
+            title={t("Resultados reales de equipos comerciales", "Real outcomes from sales teams")}
+            description={t(
+              "Historias de operadores que ya usan AI Call Closer en operaciones de alto volumen.",
+              "Stories from operators already using AI Call Closer in high-volume workflows.",
+            )}
+          />
+
+          <div className="mt-8 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("Desplazar testimonios a la izquierda", "Scroll testimonials left")}
+              className="h-10 w-10 border border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.12]"
+              onClick={() => scrollTrack(testimonialTrackRef.current, "left")}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("Desplazar testimonios a la derecha", "Scroll testimonials right")}
+              className="h-10 w-10 border border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.12]"
+              onClick={() => scrollTrack(testimonialTrackRef.current, "right")}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div
+            ref={testimonialTrackRef}
+            className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {testimonials.map((item, index) => (
+              <motion.div
+                key={`${item.name}-${item.company}`}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.45, delay: index * 0.05 }}
+                className="w-[86%] shrink-0 snap-start sm:w-[420px] md:w-[460px]"
+              >
+                <Card className="iridescent-border iridescent-surface h-full border-white/12 bg-white/[0.03]">
+                  <CardContent className="p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 border border-white/15">
+                          <AvatarImage src={item.avatar} alt={`${item.name} profile`} />
+                          <AvatarFallback className="bg-[#1A2446] text-white">
+                            {item.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{item.name}</p>
+                          <p className="text-xs text-white/60">{item.role}</p>
+                          <p className="text-xs text-[#9AB2FF]">{item.company}</p>
+                        </div>
+                      </div>
+                      <MessageSquareQuote className="h-5 w-5 text-[#95A9FF]" />
+                    </div>
+
+                    <div className="mt-5 flex items-center gap-1.5">
+                      {Array.from({ length: 5 }).map((_, starIndex) => (
+                        <Star
+                          key={`${item.name}-star-${starIndex}`}
+                          className={cn(
+                            "h-4 w-4",
+                            starIndex < item.rating ? "fill-[#F4D77A] text-[#F4D77A]" : "text-white/20",
+                          )}
+                        />
+                      ))}
+                      <span className="ml-1 text-xs text-white/60">{item.rating}.0/5</span>
+                    </div>
+
+                    <p className="mt-4 text-sm leading-relaxed text-white/78">{item.quote}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        <section className="scroll-mt-28 px-1 pb-16">
+          <SectionTitle
+            eyebrow="FAQ"
+            title={t("Preguntas frecuentes", "Frequently asked questions")}
+            description={t(
+              "Respuestas claras para activar tu operacion de llamadas con IA sin friccion.",
+              "Clear answers to launch your AI call operation without friction.",
+            )}
+          />
+
+          <div className="mt-8 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("Desplazar FAQ a la izquierda", "Scroll FAQ left")}
+              className="h-10 w-10 border border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.12]"
+              onClick={() => scrollTrack(faqTrackRef.current, "left")}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("Desplazar FAQ a la derecha", "Scroll FAQ right")}
+              className="h-10 w-10 border border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.12]"
+              onClick={() => scrollTrack(faqTrackRef.current, "right")}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div
+            ref={faqTrackRef}
+            className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {faqItems.map((faq, index) => {
+              const isOpen = activeFaqIndex === index;
+
+              return (
+                <motion.div
+                  key={faq.question}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{ duration: 0.45, delay: index * 0.04 }}
+                  className="w-[92%] shrink-0 snap-start sm:w-[500px] md:w-[560px]"
+                >
+                  <Card className="iridescent-border iridescent-surface border-white/12 bg-white/[0.03]">
+                    <CardContent className="p-5 sm:p-6">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-auto w-full justify-between rounded-xl border border-white/12 bg-white/[0.02] px-4 py-4 text-left hover:bg-white/[0.08]"
+                        onClick={() => setActiveFaqIndex((previous) => (previous === index ? -1 : index))}
+                      >
+                        <span className="pr-4 text-sm font-semibold leading-snug text-white sm:text-base">
+                          {faq.question}
+                        </span>
+                        <ChevronRight
+                          className={cn(
+                            "h-5 w-5 shrink-0 text-[#9AB0FF] transition-transform duration-200",
+                            isOpen && "rotate-90",
+                          )}
+                        />
+                      </Button>
+
+                      <motion.div
+                        initial={false}
+                        animate={{
+                          height: isOpen ? "auto" : 0,
+                          opacity: isOpen ? 1 : 0,
+                        }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="overflow-hidden"
+                      >
+                        <p className="px-1 pt-4 text-sm leading-relaxed text-white/75">{faq.answer}</p>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
 

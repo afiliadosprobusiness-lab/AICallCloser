@@ -54,6 +54,11 @@
 
 ## Localization
 - Global ES/EN locale selector is available via LanguageToggle in landing, auth and app shell.
-- Locale is persisted in cookie icallcloser_locale via POST /api/preferences/locale.
+- Locale is persisted in cookie `aicallcloser_locale` via `POST /api/preferences/locale`.
 - Root layout reads locale server-side and sets <html lang> accordingly.
+
+## Landing UX Updates
+- Pricing section is followed by a horizontal testimonials rail (Instagram-style swipe/scroll) with real profile photos and 4-5 star ratings.
+- A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
+- Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.
 
