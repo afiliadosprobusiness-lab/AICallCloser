@@ -92,11 +92,14 @@ const twilioToCallStatus: Record<string, CallStatus> = {
   queued: CallStatus.ringing,
   ringing: CallStatus.ringing,
   in_progress: CallStatus.in_progress,
+  "in-progress": CallStatus.in_progress,
   completed: CallStatus.completed,
   busy: CallStatus.failed,
   failed: CallStatus.failed,
   no_answer: CallStatus.no_answer,
+  "no-answer": CallStatus.no_answer,
   canceled: CallStatus.failed,
+  cancelled: CallStatus.failed,
 };
 
 const plivoToCallStatus: Record<string, CallStatus> = {
