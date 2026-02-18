@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
 import { getTwilioClient } from "@/lib/twilio/client";
+import { appendTranscriptTurn, createInboundCall } from "@/modules/calls/service";
 
 const payloadSchema = z.object({
   to: z.string().min(7),
@@ -70,6 +71,29 @@ export async function POST(request: Request) {
       statusCallbackMethod: "POST",
       statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
     });
+
+    const persisted = await createInboundCall({
+      workspaceId,
+      twilioCallSid: createdCall.sid,
+      fromNumber: parsed.data.to,
+      toNumber: fromNumber,
+    });
+
+    if (persisted.isNew) {
+      await appendTranscriptTurn({
+        workspaceId,
+        callId: persisted.call.id,
+        speaker: "system",
+        text: "Outbound call initiated",
+        metadata: {
+          provider: "twilio",
+          direction: "outbound",
+          callSid: createdCall.sid,
+          from: fromNumber,
+          to: parsed.data.to,
+        },
+      });
+    }
 
     return NextResponse.json({ ok: true, data: createdCall }, { status: 201 });
   } catch (error) {
