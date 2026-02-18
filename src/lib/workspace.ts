@@ -13,51 +13,89 @@ export async function resolveWorkspaceByTwilioNumber(phoneNumber: string) {
 }
 
 export async function getWorkspaceSummary(workspaceId: string) {
-  return db.workspace.findUnique({
-    where: { id: workspaceId },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      agentConfig: {
-        select: {
-          agentName: true,
-          greetingMessage: true,
-          handoffEnabled: true,
-          handoffPhone: true,
-          calendarLink: true,
-          llmModel: true,
-          sttModel: true,
-          voiceModel: true,
-          ttsVoice: true,
-          systemPrompt: true,
-          qualificationChecklist: true,
-          pricingRules: true,
-          disallowedClaims: true,
+  try {
+    return await db.workspace.findUnique({
+      where: { id: workspaceId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        agentConfig: {
+          select: {
+            agentName: true,
+            greetingMessage: true,
+            handoffEnabled: true,
+            handoffPhone: true,
+            calendarLink: true,
+            llmModel: true,
+            sttModel: true,
+            voiceModel: true,
+            ttsVoice: true,
+            systemPrompt: true,
+            qualificationChecklist: true,
+            pricingRules: true,
+            disallowedClaims: true,
+          },
+        },
+        callPreferences: {
+          select: {
+            primaryObjective: true,
+            secondaryObjectives: true,
+            language: true,
+            meetingType: true,
+            durationMinutes: true,
+            locationText: true,
+            calendarProvider: true,
+            calendarUrl: true,
+            followupAllowedWindows: true,
+            maxFollowups: true,
+            leadFieldsRequired: true,
+            disqualifyRules: true,
+            complianceRules: true,
+          },
+        },
+        businessProfile: {
+          select: {
+            valueProp: true,
+          },
         },
       },
-      callPreferences: {
-        select: {
-          primaryObjective: true,
-          secondaryObjectives: true,
-          language: true,
-          meetingType: true,
-          durationMinutes: true,
-          locationText: true,
-          calendarProvider: true,
-          calendarUrl: true,
-          followupAllowedWindows: true,
-          maxFollowups: true,
-          leadFieldsRequired: true,
-          disqualifyRules: true,
-          complianceRules: true,
+    });
+  } catch {
+    const baseWorkspace = await db.workspace.findUnique({
+      where: { id: workspaceId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        agentConfig: {
+          select: {
+            agentName: true,
+            greetingMessage: true,
+            handoffEnabled: true,
+            handoffPhone: true,
+            calendarLink: true,
+            llmModel: true,
+            sttModel: true,
+            voiceModel: true,
+            ttsVoice: true,
+            systemPrompt: true,
+            qualificationChecklist: true,
+            pricingRules: true,
+            disallowedClaims: true,
+          },
         },
       },
-      businessProfile: {
-        select: {
-          valueProp: true,
-        },
-      },
-    },
-  });
+    });
+
+    if (!baseWorkspace) {
+      return null;
+    }
+
+    return {
+      ...baseWorkspace,
+      callPreferences: null,
+      businessProfile: null,
+    };
+  }
 }

@@ -69,8 +69,10 @@ Alternativa Twilio:
 
 ```bash
 VOICE_PROVIDER="twilio"
+BASE_URL="https://ai-call-closer-saas.vercel.app" # dominio publico de webhooks
 TWILIO_ACCOUNT_SID="AC..."
 TWILIO_AUTH_TOKEN="..."
+TWILIO_NUMBER="+15752550685" # numero origen para outbound test call
 TWILIO_INBOUND_NUMBER="+15550001111"
 HUMAN_HANDOFF_PHONE="+15550001111"
 ```
@@ -129,9 +131,29 @@ Configura el número inbound:
 - Voice webhook (POST): `https://TU_URL/api/twilio/voice/inbound`
 - Status callback (POST): `https://TU_URL/api/twilio/voice/status`
 
-Salida programática:
+Salida programática (botón Test Call):
 
 - Outbound API: `POST https://TU_URL/api/twilio/voice/outbound`
+- TwiML outbound real: `POST https://TU_URL/api/twilio/voice/outbound?agentId=...`
+- Status tracking: `POST https://TU_URL/api/twilio/voice/status`
+
+### Prueba outbound cold-call (paso a paso)
+
+1. En Vercel define:
+   - `VOICE_PROVIDER=twilio`
+   - `TWILIO_ACCOUNT_SID`
+   - `TWILIO_AUTH_TOKEN`
+   - `TWILIO_NUMBER` (o `TWILIO_INBOUND_NUMBER`)
+   - `BASE_URL` (mismo dominio público del proyecto)
+2. En Twilio Phone Number:
+   - **A call comes in**: `POST https://TU_URL/api/twilio/voice/inbound`
+   - **Call status changes**: `POST https://TU_URL/api/twilio/voice/status`
+3. En el dashboard (`/dashboard`), en **Test Call**, ingresa destino en formato E.164 (`+51...`) y pulsa **Start call**.
+4. Verifica en Twilio Monitor:
+   - Request 200 a `/api/twilio/voice/outbound`
+   - Callback 200 a `/api/twilio/voice/status`
+5. En trial de Twilio, el destino debe estar en **Verified Caller IDs**; si no, la UI mostrará:
+   - `Twilio Trial: verify the destination number in Verified Caller IDs.`
 
 ## Flujo MVP implementado
 

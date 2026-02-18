@@ -49,6 +49,9 @@
 - Twilio now has full parity for outbound calls via `/api/twilio/voice/outbound` and `/api/twilio/voice/outbound/answer`.
 - Settings screen now adapts webhook and provider labels dynamically based on `VOICE_PROVIDER` (`telnyx`, `twilio`, `plivo`).
 - Voice runtime now loads dynamic call objectives per workspace and injects playbook instructions into LLM turn orchestration.
+- Twilio outbound now uses `calls.create({ url: /api/twilio/voice/outbound?agentId=... })` with status callbacks to `/api/twilio/voice/status`.
+- Outbound TwiML bootstraps cold-call playbook from dashboard config (system prompt, checklist, objectives, disallowed claims), then continues multi-turn via `/api/twilio/voice/process`.
+- Twilio process flow now supports `Gather` speech text (`SpeechResult`) as first-class input, falling back to recording transcription when needed.
 
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.

@@ -154,6 +154,16 @@ function processPath(provider: VoiceProvider) {
   return "/api/twilio/voice/process";
 }
 
+function getSpeechText(params: Record<string, string>) {
+  return (
+    params.SpeechResult ??
+    params.speechResult ??
+    params.speech_result ??
+    params.SpeechText ??
+    ""
+  ).trim();
+}
+
 export async function handleInboundVoiceWebhook(provider: VoiceProvider, request: Request) {
   try {
     const params = await getWebhookParams(request);
@@ -290,13 +300,18 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     const providerCallId = getCallIdentifier(params);
     let leadText = "";
+    const speechText = getSpeechText(params);
 
     if (noInput) {
       leadText = "[NO_INPUT]";
     } else {
-      const recordingUrl = getRecordingUrl(params);
-      if (recordingUrl) {
-        leadText = await transcribeVoiceRecording(recordingUrl, provider);
+      if (speechText) {
+        leadText = speechText;
+      } else {
+        const recordingUrl = getRecordingUrl(params);
+        if (recordingUrl) {
+          leadText = await transcribeVoiceRecording(recordingUrl, provider);
+        }
       }
     }
 
@@ -334,6 +349,9 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
           `Qualify: ${playbook.qualifyQuestions.join(" | ")}`,
           `Primary objective (${playbook.primaryObjective}): ${playbook.objectivePrompt}`,
           `Fallback objective (${playbook.fallbackObjective}): ${playbook.fallbackPrompt}`,
+          "Cold-call behavior: opening under 30 seconds and ask permission. If not interested, close quickly.",
+          "Qualification depth: ask only 2 to 4 short questions max.",
+          "Objections: handle send info, busy, and already-have-provider with concise responses.",
           `Compliance: ${playbook.complianceBullets.join(" | ")}`,
         ].join("\n"),
         complianceRules: preferences.complianceRules,
@@ -372,6 +390,18 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
           shouldHandoff: resolution.shouldHandoff,
         };
 
+    const answeredTurns = call.transcripts.filter((turn) => turn.speaker === "user").length + (noInput ? 0 : 1);
+    const objectiveProgress = {
+      answeredTurns,
+      maxQualificationQuestions: 4,
+      phase:
+        answeredTurns <= 1
+          ? "opening"
+          : answeredTurns <= 4
+            ? "qualification"
+            : "closing",
+    };
+
     await appendTranscriptTurn({
       workspaceId,
       callId,
@@ -383,6 +413,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
         objective: resolution.objective,
         fallbackApplied: resolution.usedFallback,
         outcome: objectiveResult.outcomeCode ?? resolution.outcome,
+        objectiveProgress,
       },
     });
 
