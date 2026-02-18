@@ -59,7 +59,6 @@ export default function HomePage() {
   const [session, setSession] = useState<SimpleSession | null>(null);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const testimonialTrackRef = useRef<HTMLDivElement>(null);
-  const faqTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -271,6 +270,171 @@ export default function HomePage() {
           "Lead data quality improved a lot and the sales team spends less time on triage.",
         ),
         avatar: "https://randomuser.me/api/portraits/women/39.jpg",
+      },
+      {
+        name: "Lucas Bennett",
+        role: t("Gerente de Ventas", "Sales Manager"),
+        company: "Prime Mortgage Hub",
+        rating: 5,
+        quote: t(
+          "Cada llamada entrante ahora tiene trazabilidad completa y score comercial claro.",
+          "Every incoming call now has full traceability and a clear commercial score.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/52.jpg",
+      },
+      {
+        name: "Isabella Moretti",
+        role: t("COO", "COO"),
+        company: "Alta Med Clinics",
+        rating: 4,
+        quote: t(
+          "La agenda se mantiene llena incluso en horarios pico. El impacto fue inmediato.",
+          "The calendar stays full even during peak hours. The impact was immediate.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/24.jpg",
+      },
+      {
+        name: "Noah Williams",
+        role: t("Director de Operaciones", "Operations Director"),
+        company: "Summit Legal Group",
+        rating: 5,
+        quote: t(
+          "El equipo humano solo toma llamadas de alto valor. Mejoró todo el enfoque comercial.",
+          "The human team only takes high-value calls. It improved our entire sales focus.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/21.jpg",
+      },
+      {
+        name: "Mia Johnson",
+        role: t("Head de Revenue", "Head of Revenue"),
+        company: "Urban Realty Partners",
+        rating: 5,
+        quote: t(
+          "Nuestra tasa de respuesta subio y también la calidad de cada oportunidad registrada.",
+          "Our answer rate improved, and so did the quality of each recorded opportunity.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/31.jpg",
+      },
+      {
+        name: "Ethan Clark",
+        role: t("Fundador", "Founder"),
+        company: "Core Tax Advisory",
+        rating: 4,
+        quote: t(
+          "Integración limpia con nuestro flujo actual, sin frenar operaciones.",
+          "Clean integration with our current workflow without slowing operations.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/29.jpg",
+      },
+      {
+        name: "Amelia King",
+        role: t("Lider de Cierre", "Closing Team Lead"),
+        company: "BlueLine Properties",
+        rating: 5,
+        quote: t(
+          "El filtro por intención nos ahorra horas semanales y mejora conversiones.",
+          "Intent filtering saves us hours weekly and improves conversions.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/56.jpg",
+      },
+      {
+        name: "Aiden Perez",
+        role: t("Gerente General", "General Manager"),
+        company: "Vertex Health Care",
+        rating: 4,
+        quote: t(
+          "Implementamos sin fricción y desde el día uno vimos más citas calificadas.",
+          "We implemented with no friction and saw more qualified appointments from day one.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/11.jpg",
+      },
+      {
+        name: "Harper Davis",
+        role: t("Directora de Marketing", "Marketing Director"),
+        company: "NorthPath Finance",
+        rating: 5,
+        quote: t(
+          "El transcript automático nos dio visibilidad real del dolor del cliente.",
+          "Automatic transcripts gave us real visibility into customer pain points.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/62.jpg",
+      },
+      {
+        name: "Logan Ward",
+        role: t("Head de Ventas", "Head of Sales"),
+        company: "Precision Solar Co.",
+        rating: 5,
+        quote: t(
+          "Nunca habíamos tenido un sistema tan consistente para no perder llamadas.",
+          "We had never had such a consistent system to avoid missed calls.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/75.jpg",
+      },
+      {
+        name: "Ava Foster",
+        role: t("Directora Comercial", "Commercial Director"),
+        company: "Helix Dental Network",
+        rating: 4,
+        quote: t(
+          "La transferencia a humano funciona justo cuando el lead está listo para avanzar.",
+          "Human transfer kicks in exactly when the lead is ready to move forward.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/15.jpg",
+      },
+      {
+        name: "Mason Brooks",
+        role: t("COO", "COO"),
+        company: "Gateway Home Services",
+        rating: 5,
+        quote: t(
+          "Subimos productividad comercial sin aumentar equipo de atención.",
+          "We increased sales productivity without growing the support team.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/36.jpg",
+      },
+      {
+        name: "Charlotte Evans",
+        role: t("Gerente de Operaciones", "Operations Manager"),
+        company: "Silverline Realty",
+        rating: 4,
+        quote: t(
+          "Ahora sabemos exactamente qué llamadas generan ingresos y cuáles no.",
+          "Now we know exactly which calls generate revenue and which do not.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/73.jpg",
+      },
+      {
+        name: "Elijah Cooper",
+        role: t("Director Comercial", "Commercial Director"),
+        company: "Axis Consulting",
+        rating: 5,
+        quote: t(
+          "La velocidad de respuesta mejoró la experiencia del prospecto desde el primer minuto.",
+          "Response speed improved prospect experience from the very first minute.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/58.jpg",
+      },
+      {
+        name: "Luna Mitchell",
+        role: t("Head de Growth", "Head of Growth"),
+        company: "PrimeCare Clinics",
+        rating: 5,
+        quote: t(
+          "Tener IA 24/7 nos permitió capturar demanda fuera de horario laboral.",
+          "Having 24/7 AI allowed us to capture demand outside business hours.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/women/42.jpg",
+      },
+      {
+        name: "James Rivera",
+        role: t("Founder", "Founder"),
+        company: "BridgePoint Insurance",
+        rating: 4,
+        quote: t(
+          "El onboarding fue rápido y el equipo adoptó la plataforma sin resistencia.",
+          "Onboarding was fast and the team adopted the platform without resistance.",
+        ),
+        avatar: "https://randomuser.me/api/portraits/men/40.jpg",
       },
     ],
     [t],
@@ -777,33 +941,7 @@ export default function HomePage() {
             )}
           />
 
-          <div className="mt-8 flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("Desplazar FAQ a la izquierda", "Scroll FAQ left")}
-              className="h-10 w-10 border border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.12]"
-              onClick={() => scrollTrack(faqTrackRef.current, "left")}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("Desplazar FAQ a la derecha", "Scroll FAQ right")}
-              className="h-10 w-10 border border-white/15 bg-white/[0.04] text-white/85 hover:bg-white/[0.12]"
-              onClick={() => scrollTrack(faqTrackRef.current, "right")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div
-            ref={faqTrackRef}
-            className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
+          <div className="mt-8 space-y-4">
             {faqItems.map((faq, index) => {
               const isOpen = activeFaqIndex === index;
 
@@ -815,7 +953,7 @@ export default function HomePage() {
                   whileInView="show"
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.45, delay: index * 0.04 }}
-                  className="w-[92%] shrink-0 snap-start sm:w-[500px] md:w-[560px]"
+                  className="w-full"
                 >
                   <Card className="iridescent-border iridescent-surface border-white/12 bg-white/[0.03]">
                     <CardContent className="p-5 sm:p-6">
