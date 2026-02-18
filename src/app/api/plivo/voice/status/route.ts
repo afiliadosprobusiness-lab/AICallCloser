@@ -1,5 +1,5 @@
 import { handleStatusVoiceWebhook } from "@/modules/voice-webhooks/handlers";
 
 export async function POST(request: Request) {
-  return handleStatusVoiceWebhook("twilio", request);
+  return handleStatusVoiceWebhook("plivo", request);
 }

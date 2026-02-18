@@ -1,4 +1,4 @@
-﻿import { TwilioNumberForm } from "@/components/app/twilio-number-form";
+import { TwilioNumberForm } from "@/components/app/twilio-number-form";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { db } from "@/lib/db";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
@@ -18,7 +18,7 @@ export default async function SettingsPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-[#A7A296]">Ajustes</p>
         <h1 className="mt-2 font-serif text-3xl text-[#F5F3EE]">Workspace y telefonia</h1>
         <p className="mt-2 text-sm text-[#B9B4A9]">
-          Configura numero Twilio inbound y reglas de handoff humano por workspace.
+          Configura numero de Plivo inbound y reglas de handoff humano por workspace.
         </p>
       </PremiumCard>
 
@@ -51,7 +51,7 @@ export default async function SettingsPage() {
 
       <PremiumCard className="space-y-4 p-4 md:p-5">
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">Numeros Twilio</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">Numeros Plivo</p>
           <h2 className="mt-1 text-lg font-semibold text-[#F5F3EE]">Inbound routing</h2>
         </div>
         <TwilioNumberForm />
@@ -76,12 +76,15 @@ export default async function SettingsPage() {
       </PremiumCard>
 
       <PremiumCard className="space-y-2 p-4 text-sm text-[#B9B4A9]">
-        <p className="font-medium text-[#F5F3EE]">Webhook Twilio recomendado</p>
+        <p className="font-medium text-[#F5F3EE]">Webhook Plivo recomendado</p>
         <p>
-          Voice URL: <code className="text-[#E5C76B]">POST /api/twilio/voice/inbound</code>
+          Voice URL: <code className="text-[#E5C76B]">POST /api/plivo/voice/inbound</code>
         </p>
         <p>
-          Status callback: <code className="text-[#E5C76B]">POST /api/twilio/voice/status</code>
+          Status callback: <code className="text-[#E5C76B]">POST /api/plivo/voice/status</code>
+        </p>
+        <p>
+          Outbound API: <code className="text-[#E5C76B]">POST /api/plivo/voice/outbound</code>
         </p>
       </PremiumCard>
     </div>

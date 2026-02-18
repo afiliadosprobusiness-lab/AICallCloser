@@ -8,7 +8,7 @@ SaaS multi-tenant **mobile-first** en Next.js para gestionar llamadas inbound co
 - Tailwind CSS + shadcn/ui
 - Prisma + PostgreSQL
 - NextAuth (Auth.js) con credenciales
-- Twilio Voice inbound webhooks
+- Plivo Voice inbound/outbound webhooks
 - OpenAI-compatible LLM + STT + TTS
 - Deploy target: Vercel
 
@@ -17,10 +17,10 @@ SaaS multi-tenant **mobile-first** en Next.js para gestionar llamadas inbound co
 - Multi-tenant real por `workspaceId` en datos de dominio (`Lead`, `Call`, `TranscriptTurn`, `AgentConfig`, etc.).
 - Aislamiento por sesión + membresía (`WorkspaceMember`) en backend.
 - Flujo inbound:
-  1. Twilio -> `/api/twilio/voice/inbound`
-  2. Resolución de workspace por número Twilio
+  1. Plivo -> `/api/plivo/voice/inbound`
+  2. Resolución de workspace por número de telefonía
   3. Persistencia de llamada + lead
-  4. Turnos de voz en `/api/twilio/voice/process`
+  4. Turnos de voz en `/api/plivo/voice/process`
   5. STT -> LLM (guardrails) -> TTS
   6. Outcome + transcript + handoff/agenda
 
@@ -37,7 +37,7 @@ Documento completo: `docs/architecture-and-plan.md`
 
 - Node.js 20+
 - PostgreSQL 14+
-- Cuenta Twilio (Voice)
+- Cuenta Plivo (Voice)
 - OpenAI API key (u proveedor compatible)
 
 ## Variables de entorno
@@ -57,9 +57,11 @@ Opcionales para llamadas IA reales:
 ```bash
 OPENAI_API_KEY="..."
 OPENAI_BASE_URL="..." # solo si usas proveedor compatible
-TWILIO_ACCOUNT_SID="..."
-TWILIO_AUTH_TOKEN="..."
-TWILIO_WEBHOOK_BASE_URL="https://tu-dominio-o-ngrok"
+VOICE_PROVIDER="plivo"
+PLIVO_AUTH_ID="..."
+PLIVO_AUTH_TOKEN="..."
+PLIVO_WEBHOOK_BASE_URL="https://tu-dominio-o-ngrok"
+PLIVO_INBOUND_NUMBER="+15550001111"
 HUMAN_HANDOFF_PHONE="+15550001111"
 ```
 
@@ -80,14 +82,14 @@ App: `http://localhost:3000`
 - Email: `demo@aicallcloser.com`
 - Password: `Demo1234!`
 
-## Configuración Twilio
+## Configuración Plivo
 
 Configura el número inbound:
 
-- Voice webhook (POST): `https://TU_URL/api/twilio/voice/inbound`
-- Status callback (POST): `https://TU_URL/api/twilio/voice/status`
+- Answer URL / Voice webhook (POST): `https://TU_URL/api/plivo/voice/inbound`
+- Hangup URL / Status callback (POST): `https://TU_URL/api/plivo/voice/status`
 
-Para local, usar `ngrok http 3000` y poner ese dominio en `TWILIO_WEBHOOK_BASE_URL`.
+Para local, usar `ngrok http 3000` y poner ese dominio en `PLIVO_WEBHOOK_BASE_URL`.
 
 ## Flujo MVP implementado
 
@@ -96,8 +98,8 @@ Para local, usar `ngrok http 3000` y poner ese dominio en `TWILIO_WEBHOOK_BASE_U
 - Leads (mobile cards + desktop table)
 - Calls (historial + transcript + simulador de turnos)
 - Agente IA (config editable con guardrails)
-- Ajustes (workspace, Twilio numbers, handoff)
-- Webhooks Twilio inbound/status
+- Ajustes (workspace, números, handoff)
+- Webhooks Plivo inbound/status + endpoint outbound
 - Pipeline STT/LLM/TTS con fallback seguro
 
 ## Validación manual por fase
@@ -126,7 +128,7 @@ Para local, usar `ngrok http 3000` y poner ese dominio en `TWILIO_WEBHOOK_BASE_U
 ## Manejo de errores
 
 - Validación de payloads con Zod en endpoints
-- Verificación de firma Twilio
+- Verificación de firma Plivo/Twilio (según proveedor)
 - Logs estructurados con Pino
 - Fallback de IA cuando faltan credenciales o respuesta inválida
 
