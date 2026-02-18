@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { slugifyWorkspaceName } from "@/lib/slug";
 import { getSessionOrThrow } from "@/lib/session";
+import { getAdminEmails } from "@/lib/admin";
 
 const payloadSchema = z.object({
   name: z.string().min(2).max(80),
@@ -52,6 +53,27 @@ export async function POST(request: Request) {
           role: "owner",
         },
       });
+
+      const adminEmails = getAdminEmails();
+      const adminUsers = await tx.user.findMany({
+        where: { email: { in: adminEmails } },
+        select: { id: true },
+      });
+
+      const adminMemberships = adminUsers
+        .filter((admin) => admin.id !== userId)
+        .map((admin) => ({
+          userId: admin.id,
+          workspaceId: createdWorkspace.id,
+          role: "admin" as const,
+        }));
+
+      if (adminMemberships.length > 0) {
+        await tx.workspaceMember.createMany({
+          data: adminMemberships,
+          skipDuplicates: true,
+        });
+      }
 
       await tx.user.update({
         where: { id: userId },

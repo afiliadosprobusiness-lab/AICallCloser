@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { slugifyWorkspaceName } from "@/lib/slug";
+import { getAdminEmails } from "@/lib/admin";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(80),
@@ -69,6 +70,27 @@ export async function POST(request: Request) {
         },
       });
 
+      const adminEmails = getAdminEmails();
+      const adminUsers = await tx.user.findMany({
+        where: { email: { in: adminEmails } },
+        select: { id: true },
+      });
+
+      const adminMemberships = adminUsers
+        .filter((admin) => admin.id !== user.id)
+        .map((admin) => ({
+          workspaceId: workspace.id,
+          userId: admin.id,
+          role: "admin" as const,
+        }));
+
+      if (adminMemberships.length > 0) {
+        await tx.workspaceMember.createMany({
+          data: adminMemberships,
+          skipDuplicates: true,
+        });
+      }
+
       await tx.user.update({
         where: { id: user.id },
         data: {
@@ -105,6 +127,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, data: result }, { status: 201 });
   } catch (error) {
     logger.error({ error }, "Failed to register user");
+
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      typeof (error as { code?: unknown }).code === "string" &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: { message: "Ese email o workspace ya existe. Usa otro valor." },
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
       {
         ok: false,

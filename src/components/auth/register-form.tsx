@@ -40,11 +40,19 @@ export function RegisterForm() {
 
       const result = (await response.json()) as {
         ok: boolean;
-        error?: { message?: string };
+        error?: {
+          message?: string;
+          formErrors?: string[];
+          fieldErrors?: Record<string, string[]>;
+        };
       };
 
       if (!response.ok || !result.ok) {
-        setError(result.error?.message ?? "No se pudo crear la cuenta.");
+        const fallbackFieldError = result.error?.fieldErrors
+          ? Object.values(result.error.fieldErrors).flat().find(Boolean)
+          : undefined;
+
+        setError(result.error?.message ?? result.error?.formErrors?.[0] ?? fallbackFieldError ?? "No se pudo crear la cuenta.");
         return;
       }
 

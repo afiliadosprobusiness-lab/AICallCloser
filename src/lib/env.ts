@@ -14,6 +14,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: emptyToUndefined(z.string().optional()),
   RESEND_API_KEY: emptyToUndefined(z.string().optional()),
   RESEND_FROM_EMAIL: emptyToUndefined(z.string().email().optional()),
+  ADMIN_EMAILS: emptyToUndefined(z.string().optional()),
   OPENAI_API_KEY: emptyToUndefined(z.string().optional()),
   OPENAI_BASE_URL: emptyToUndefined(z.string().url().optional()),
   OPENAI_MODEL: z.string().default("gpt-4.1-mini"),
