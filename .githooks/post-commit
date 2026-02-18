@@ -1,0 +1,14 @@
+#!/bin/sh
+set -u
+
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+
+if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+  exit 0
+fi
+
+if git rev-parse --verify "@{u}" >/dev/null 2>&1; then
+  git push
+else
+  git push -u origin "$branch"
+fi
