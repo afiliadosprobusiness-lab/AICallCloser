@@ -203,7 +203,7 @@ export default function HomePage() {
   const primaryLabel = isAuthenticated ? t("Ir al Dashboard", "Go to Dashboard") : t("Crear Cuenta", "Create Account");
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
+    <div className="landing-root relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
       <div className="pointer-events-none absolute inset-0 [background:radial-gradient(40rem_40rem_at_15%_15%,rgba(69,94,255,0.18),transparent),radial-gradient(36rem_36rem_at_85%_10%,rgba(144,76,255,0.18),transparent),linear-gradient(to_bottom,#0B0F19,#0B0F19)]" />
       <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:44px_44px]" />
 
