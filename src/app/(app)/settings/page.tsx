@@ -5,11 +5,23 @@ import { cn } from "@/lib/utils";
 import { translate } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
+import { getVoiceProvider } from "@/lib/voice/provider";
 
 export default async function SettingsPage() {
   const locale = await getRequestLocale();
   const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId, role } = await getWorkspaceContextOrThrow();
+  const voiceProvider = getVoiceProvider();
+  const providerLabel = voiceProvider === "twilio" ? "Twilio" : voiceProvider === "plivo" ? "Plivo" : "Telnyx";
+  const settingsEndpoint =
+    voiceProvider === "twilio"
+      ? "/api/settings/twilio"
+      : voiceProvider === "plivo"
+        ? "/api/settings/plivo"
+        : "/api/settings/telnyx";
+  const inboundPath = `/api/${voiceProvider}/voice/inbound`;
+  const statusPath = `/api/${voiceProvider}/voice/status`;
+  const outboundPath = `/api/${voiceProvider}/voice/outbound`;
 
   const [workspace, numbers, config] = await Promise.all([
     db.workspace.findUnique({ where: { id: workspaceId } }),
@@ -53,7 +65,10 @@ export default async function SettingsPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-[#A7A296]">{t("Ajustes", "Settings")}</p>
         <h1 className="mt-2 font-serif text-3xl text-[#F5F3EE]">{t("Workspace y telefonia", "Workspace and telephony")}</h1>
         <p className="mt-2 text-sm text-[#B9B4A9]">
-          {t("Configura numero de Telnyx inbound y reglas de handoff humano por workspace.", "Configure Telnyx inbound number and human handoff rules by workspace.")}
+          {t(
+            `Configura numero inbound de ${providerLabel} y reglas de handoff humano por workspace.`,
+            `Configure ${providerLabel} inbound number and human handoff rules by workspace.`,
+          )}
         </p>
       </PremiumCard>
 
@@ -118,10 +133,12 @@ export default async function SettingsPage() {
 
       <PremiumCard className="space-y-4 p-4 md:p-5">
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Numeros Telnyx", "Telnyx numbers")}</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">
+            {t(`Numeros ${providerLabel}`, `${providerLabel} numbers`)}
+          </p>
           <h2 className="mt-1 text-lg font-semibold text-[#F5F3EE]">Inbound routing</h2>
         </div>
-        <TwilioNumberForm />
+        <TwilioNumberForm settingsEndpoint={settingsEndpoint} providerLabel={providerLabel} />
         <div className="space-y-2">
           {numbers.length === 0 ? (
             <p className="text-sm text-[#A7A296]">{t("No hay numeros asociados.", "No associated numbers.")}</p>
@@ -143,15 +160,17 @@ export default async function SettingsPage() {
       </PremiumCard>
 
       <PremiumCard className="space-y-2 p-4 text-sm text-[#B9B4A9]">
-        <p className="font-medium text-[#F5F3EE]">{t("Webhook Telnyx recomendado", "Recommended Telnyx webhook")}</p>
-        <p>
-          Voice URL: <code className="text-[#E5C76B]">POST /api/telnyx/voice/inbound</code>
+        <p className="font-medium text-[#F5F3EE]">
+          {t(`Webhook ${providerLabel} recomendado`, `Recommended ${providerLabel} webhook`)}
         </p>
         <p>
-          Status callback: <code className="text-[#E5C76B]">POST /api/telnyx/voice/status</code>
+          Voice URL: <code className="text-[#E5C76B]">POST {inboundPath}</code>
         </p>
         <p>
-          Outbound API: <code className="text-[#E5C76B]">POST /api/telnyx/voice/outbound</code>
+          Status callback: <code className="text-[#E5C76B]">POST {statusPath}</code>
+        </p>
+        <p>
+          Outbound API: <code className="text-[#E5C76B]">POST {outboundPath}</code>
         </p>
       </PremiumCard>
     </div>

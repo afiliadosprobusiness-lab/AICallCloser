@@ -46,6 +46,8 @@
 - Inbound webhook flow avoids duplicate `Inbound call started` transcript turns on provider retries.
 - Status webhook flow can resolve workspace by `callSid` fallback when destination number is missing.
 - Terminal call closure is idempotent: ended calls are not overwritten by repeated provider callbacks.
+- Twilio now has full parity for outbound calls via `/api/twilio/voice/outbound` and `/api/twilio/voice/outbound/answer`.
+- Settings screen now adapts webhook and provider labels dynamically based on `VOICE_PROVIDER` (`telnyx`, `twilio`, `plivo`).
 
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.

@@ -7,20 +7,27 @@ import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function TwilioNumberForm() {
+type VoiceNumberFormProps = {
+  settingsEndpoint?: string;
+  providerLabel?: string;
+};
+
+export function TwilioNumberForm(props: VoiceNumberFormProps) {
   const router = useRouter();
   const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const settingsEndpoint = props.settingsEndpoint ?? "/api/settings/telnyx";
+  const providerLabel = props.providerLabel ?? "Telnyx";
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus(null);
 
     startTransition(async () => {
-      const response = await fetch("/api/settings/telnyx", {
+      const response = await fetch(settingsEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber, friendlyName }),
@@ -30,8 +37,8 @@ export function TwilioNumberForm() {
         setStatus({
           type: "error",
           message: t(
-            "No se pudo guardar el numero. Verifica formato y permisos.",
-            "Could not save the number. Verify format and permissions.",
+            `No se pudo guardar el numero de ${providerLabel}. Verifica formato y permisos.`,
+            `Could not save the ${providerLabel} number. Verify format and permissions.`,
           ),
         });
         return;
@@ -41,7 +48,10 @@ export function TwilioNumberForm() {
       setFriendlyName("");
       setStatus({
         type: "success",
-        message: t("Numero guardado correctamente.", "Number saved successfully."),
+        message: t(
+          `Numero de ${providerLabel} guardado correctamente.`,
+          `${providerLabel} number saved successfully.`,
+        ),
       });
       router.refresh();
     });

@@ -65,6 +65,16 @@ TELNYX_INBOUND_NUMBER="+15550001111"
 HUMAN_HANDOFF_PHONE="+15550001111"
 ```
 
+Alternativa Twilio:
+
+```bash
+VOICE_PROVIDER="twilio"
+TWILIO_ACCOUNT_SID="AC..."
+TWILIO_AUTH_TOKEN="..."
+TWILIO_INBOUND_NUMBER="+15550001111"
+HUMAN_HANDOFF_PHONE="+15550001111"
+```
+
 Opcional para login/registro con Google (Firebase):
 
 ```bash
@@ -111,6 +121,17 @@ Configura el número inbound:
 - Status callback (POST): `https://TU_URL/api/telnyx/voice/status`
 
 Para local, usar `ngrok http 3000` y poner ese dominio en `TELNYX_WEBHOOK_BASE_URL`.
+
+## Configuración Twilio
+
+Configura el número inbound:
+
+- Voice webhook (POST): `https://TU_URL/api/twilio/voice/inbound`
+- Status callback (POST): `https://TU_URL/api/twilio/voice/status`
+
+Salida programática:
+
+- Outbound API: `POST https://TU_URL/api/twilio/voice/outbound`
 
 ## Flujo MVP implementado
 
