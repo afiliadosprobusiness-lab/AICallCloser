@@ -164,6 +164,34 @@ function getSpeechText(params: Record<string, string>) {
   ).trim();
 }
 
+function asMetadataObject(value: unknown): Record<string, unknown> | null {
+  if (typeof value === "object" && value !== null) {
+    return value as Record<string, unknown>;
+  }
+
+  return null;
+}
+
+function getCallScopedCompiledPrompt(
+  turns: Array<{ speaker: string; metadata?: unknown }>,
+) {
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    if (turn?.speaker !== "system") {
+      continue;
+    }
+
+    const metadata = asMetadataObject(turn.metadata);
+    const compiled = metadata?.compiledSystemPrompt;
+
+    if (typeof compiled === "string" && compiled.trim().length > 0) {
+      return compiled.trim();
+    }
+  }
+
+  return null;
+}
+
 export async function handleInboundVoiceWebhook(provider: VoiceProvider, request: Request) {
   try {
     const params = await getWebhookParams(request);
@@ -297,6 +325,8 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       valueProp: workspace.businessProfile?.valueProp ?? "",
       preferences,
     });
+    const compiledPromptFromCall = getCallScopedCompiledPrompt(call.transcripts);
+    const effectiveSystemPrompt = compiledPromptFromCall ?? workspace.agentConfig.systemPrompt;
 
     const providerCallId = getCallIdentifier(params);
     let leadText = "";
@@ -338,7 +368,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
         text: turn.text,
       })),
       config: {
-        systemPrompt: workspace.agentConfig.systemPrompt,
+        systemPrompt: effectiveSystemPrompt,
         qualificationChecklist: workspace.agentConfig.qualificationChecklist,
         disallowedClaims: workspace.agentConfig.disallowedClaims,
         pricingRules: workspace.agentConfig.pricingRules,
