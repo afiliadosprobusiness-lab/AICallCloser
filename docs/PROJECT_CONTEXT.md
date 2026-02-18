@@ -34,6 +34,23 @@
 - App routes use src/app/(app)/loading.tsx for responsive skeleton loading feedback.
 - Auth JWT sync with DB is throttled (30s window) to reduce repeated query cost while navigating.
 
+## Business Observability
+- Dashboard now includes extended funnel and operations metrics:
+  - callsCompleted, callsNoAnswer, noAnswerRate
+  - newLeads, qualifiedLeads, scheduledLeads, wonLeads, lostLeads
+  - avgDurationSeconds and activeNumbers
+  - workspace readiness score and checklist
+- Calls module now supports selecting a specific call via `?callId=...` for transcript review.
+
+## Voice Webhook Reliability
+- Inbound webhook flow avoids duplicate `Inbound call started` transcript turns on provider retries.
+- Status webhook flow can resolve workspace by `callSid` fallback when destination number is missing.
+- Terminal call closure is idempotent: ended calls are not overwritten by repeated provider callbacks.
+
+## Forms and Validation UX
+- Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.
+- Telephony number form now shows explicit success/error state after submit.
+
 
 ## Localization
 - Global ES/EN locale selector is available via LanguageToggle in landing, auth and app shell.

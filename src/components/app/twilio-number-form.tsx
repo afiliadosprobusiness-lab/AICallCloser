@@ -13,19 +13,36 @@ export function TwilioNumberForm() {
   const [isPending, startTransition] = useTransition();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
+  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setStatus(null);
 
     startTransition(async () => {
-      await fetch("/api/settings/telnyx", {
+      const response = await fetch("/api/settings/telnyx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber, friendlyName }),
       });
 
+      if (!response.ok) {
+        setStatus({
+          type: "error",
+          message: t(
+            "No se pudo guardar el numero. Verifica formato y permisos.",
+            "Could not save the number. Verify format and permissions.",
+          ),
+        });
+        return;
+      }
+
       setPhoneNumber("");
       setFriendlyName("");
+      setStatus({
+        type: "success",
+        message: t("Numero guardado correctamente.", "Number saved successfully."),
+      });
       router.refresh();
     });
   }
@@ -52,6 +69,13 @@ export function TwilioNumberForm() {
       >
         {isPending ? t("Guardando", "Saving") : t("Agregar", "Add")}
       </Button>
+      {status ? (
+        <p
+          className={`text-xs ${status.type === "error" ? "text-red-300" : "text-emerald-300"} md:col-span-3`}
+        >
+          {status.message}
+        </p>
+      ) : null}
     </form>
   );
 }

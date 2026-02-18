@@ -45,6 +45,9 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
   const [disallowedClaims, setDisallowedClaims] = useState(initial.disallowedClaims.join("\n"));
   const [pricingRules, setPricingRules] = useState(JSON.stringify(initial.pricingRules, null, 2));
 
+  const parsedPricingRules = useMemo(() => safeJson(pricingRules), [pricingRules]);
+  const hasPricingRulesError = parsedPricingRules === null;
+
   const payload = useMemo(
     () => ({
       agentName,
@@ -65,7 +68,7 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean),
-      pricingRules: safeJson(pricingRules),
+      pricingRules: parsedPricingRules ?? {},
     }),
     [
       agentName,
@@ -80,12 +83,17 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
       ttsVoice,
       qualificationChecklist,
       disallowedClaims,
-      pricingRules,
+      parsedPricingRules,
     ],
   );
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (hasPricingRulesError) {
+      setStatus(t("Corrige el JSON de pricing rules antes de guardar.", "Fix pricing rules JSON before saving."));
+      return;
+    }
 
     startTransition(async () => {
       const response = await fetch("/api/agent-config", {
@@ -99,7 +107,7 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
       if (response.ok) {
         setStatus(t("Configuracion guardada.", "Configuration saved."));
       } else {
-        setStatus(t("No se pudo guardar.", "Could not save."));
+        setStatus(t("No se pudo guardar. Revisa campos obligatorios.", "Could not save. Review required fields."));
       }
     });
   }
@@ -150,6 +158,11 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
           <div className="space-y-2">
             <Label>{t("Pricing rules (JSON)", "Pricing rules (JSON)")}</Label>
             <Textarea value={pricingRules} onChange={(e) => setPricingRules(e.target.value)} rows={6} />
+            {hasPricingRulesError ? (
+              <p className="text-xs text-red-300">
+                {t("JSON invalido. Usa llaves y comillas correctas.", "Invalid JSON. Use valid object syntax.")}
+              </p>
+            ) : null}
           </div>
         </div>
       </details>
@@ -179,7 +192,7 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
       <div className="flex items-center gap-3">
         <Button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || hasPricingRulesError}
           className="h-11 rounded-xl bg-[#C9A227] px-5 text-[#18140D] hover:bg-[#E5C76B]"
         >
           {isPending ? t("Guardando...", "Saving...") : t("Guardar configuracion", "Save configuration")}
@@ -207,6 +220,6 @@ function safeJson(raw: string) {
   try {
     return JSON.parse(raw);
   } catch {
-    return {};
+    return null;
   }
 }

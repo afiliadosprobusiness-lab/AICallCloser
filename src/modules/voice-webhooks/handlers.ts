@@ -24,6 +24,7 @@ import {
   appendTranscriptTurn,
   applyDecisionToCall,
   completeCall,
+  getCallByProviderSid,
   createInboundCall,
   getCallContext,
 } from "@/modules/calls/service";
@@ -176,12 +177,13 @@ export async function handleInboundVoiceWebhook(provider: VoiceProvider, request
       );
     }
 
-    const call = await createInboundCall({
+    const inbound = await createInboundCall({
       workspaceId: workspacePhone.workspaceId,
       twilioCallSid: callSid,
       fromNumber: from,
       toNumber: to,
     });
+    const call = inbound.call;
 
     const workspace = await getWorkspaceSummary(workspacePhone.workspaceId);
 
@@ -189,18 +191,20 @@ export async function handleInboundVoiceWebhook(provider: VoiceProvider, request
       workspace?.agentConfig?.greetingMessage ??
       "Hola, soy el asistente virtual del equipo. Voy a ayudarte a calificar y agendar en menos de un minuto.";
 
-    await appendTranscriptTurn({
-      workspaceId: workspacePhone.workspaceId,
-      callId: call.id,
-      speaker: "system",
-      text: "Inbound call started",
-      metadata: {
-        provider,
-        callSid,
-        from,
-        to,
-      },
-    });
+    if (inbound.isNew) {
+      await appendTranscriptTurn({
+        workspaceId: workspacePhone.workspaceId,
+        callId: call.id,
+        speaker: "system",
+        text: "Inbound call started",
+        metadata: {
+          provider,
+          callSid,
+          from,
+          to,
+        },
+      });
+    }
 
     let promptAudioUrl: string | undefined;
 
@@ -418,23 +422,33 @@ export async function handleStatusVoiceWebhook(provider: VoiceProvider, request:
     }
 
     const callSid = getCallIdentifier(params);
-    const toNumber = getToNumber(params);
     const callStatus = getProviderCallStatus(params);
 
-    if (!callSid || !toNumber || !callStatus) {
+    if (!callSid || !callStatus) {
       return new Response("Missing params", { status: 400 });
     }
 
-    const workspacePhone = await resolveWorkspaceByTwilioNumber(toNumber);
+    const toNumber = getToNumber(params);
+    let workspaceId: string | null = null;
 
-    if (!workspacePhone) {
+    if (toNumber) {
+      const workspacePhone = await resolveWorkspaceByTwilioNumber(toNumber);
+      workspaceId = workspacePhone?.workspaceId ?? null;
+    }
+
+    if (!workspaceId) {
+      const call = await getCallByProviderSid(callSid);
+      workspaceId = call?.workspaceId ?? null;
+    }
+
+    if (!workspaceId) {
       return new Response("ok", { status: 200 });
     }
 
     const status = mapProviderStatusToCallStatus(provider, callStatus);
 
     await completeCall({
-      workspaceId: workspacePhone.workspaceId,
+      workspaceId,
       callSid,
       status,
       durationSeconds: getCallDurationSeconds(params),

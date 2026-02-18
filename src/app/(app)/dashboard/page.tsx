@@ -1,4 +1,4 @@
-import { PhoneCall, Sparkles, Target, Users } from "lucide-react";
+import { CheckCircle2, CircleAlert, PhoneCall, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
 
 import { AIThinkingIndicator } from "@/components/premium/ai-thinking-indicator";
 import { CallsLineChart } from "@/components/premium/calls-line-chart";
@@ -15,6 +15,16 @@ export default async function DashboardPage() {
   const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId } = await getWorkspaceContextOrThrow();
   const metrics = await getDashboardMetrics(workspaceId);
+
+  const readinessLabels = [
+    t("Agente configurado", "Agent configured"),
+    t("Numero activo", "Active number"),
+    t("Handoff listo", "Handoff ready"),
+    t("Guardrails completos", "Guardrails complete"),
+    t("Actividad reciente", "Recent activity"),
+  ];
+
+  const hasReadinessRisk = metrics.readinessScore < 80;
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -35,10 +45,27 @@ export default async function DashboardPage() {
       </PremiumCard>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={t("Llamadas", "Calls")} value={String(metrics.callsTotal)} delta={t("+12% semana", "+12% week") } highlight />
-        <KpiCard label={t("Leads calificados", "Qualified leads")} value={String(metrics.qualifiedLeads)} delta={t("+8% semana", "+8% week")} />
-        <KpiCard label={t("Agendados", "Scheduled")} value={String(metrics.scheduledLeads)} delta={t("+5% semana", "+5% week")} />
-        <KpiCard label={t("Close rate", "Close rate")} value={`${metrics.closeRate}%`} delta={t("+2.1 pts", "+2.1 pts")} />
+        <KpiCard
+          label={t("Llamadas", "Calls")}
+          value={String(metrics.callsTotal)}
+          delta={t(`${metrics.callsCompleted} atendidas`, `${metrics.callsCompleted} answered`)}
+          highlight
+        />
+        <KpiCard
+          label={t("Leads calificados", "Qualified leads")}
+          value={String(metrics.qualifiedLeads)}
+          delta={t(`${metrics.newLeads} nuevos`, `${metrics.newLeads} new`)}
+        />
+        <KpiCard
+          label={t("Agendados", "Scheduled")}
+          value={String(metrics.scheduledLeads)}
+          delta={t(`${metrics.wonLeads} cerrados`, `${metrics.wonLeads} won`)}
+        />
+        <KpiCard
+          label={t("Close rate", "Close rate")}
+          value={`${metrics.closeRate}%`}
+          delta={t(`No answer ${metrics.noAnswerRate}%`, `No answer ${metrics.noAnswerRate}%`)}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
@@ -67,27 +94,93 @@ export default async function DashboardPage() {
         </PremiumCard>
 
         <PremiumCard className="p-4 md:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Readiness operativa", "Operational readiness")}</p>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#E5C76B]">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {metrics.readinessScore}%
+            </div>
+          </div>
+
+          <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#6FA8FF] to-[#E5C76B] transition-all"
+              style={{ width: `${metrics.readinessScore}%` }}
+            />
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {readinessLabels.map((label, index) => {
+              const ready = Boolean(metrics.readinessChecks[index]);
+              return (
+                <div key={label} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <span className="text-sm text-[#F5F3EE]">{label}</span>
+                  {ready ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  ) : (
+                    <CircleAlert className="h-4 w-4 text-amber-300" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {hasReadinessRisk ? (
+            <p className="mt-3 text-xs text-amber-200/90">
+              {t(
+                "Completa los items pendientes para mejorar conversion y estabilidad de llamadas.",
+                "Complete pending items to improve conversion and call reliability.",
+              )}
+            </p>
+          ) : null}
+        </PremiumCard>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+        <PremiumCard className="p-4 md:p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#F5F3EE]">{t("Funnel comercial", "Sales funnel")}</h2>
+            <Target className="h-4 w-4 text-[#E5C76B]" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <FunnelTile label={t("Nuevos", "New")} value={metrics.newLeads} />
+            <FunnelTile label={t("Calificados", "Qualified")} value={metrics.qualifiedLeads} />
+            <FunnelTile label={t("Agendados", "Scheduled")} value={metrics.scheduledLeads} />
+            <FunnelTile label={t("Ganados", "Won")} value={metrics.wonLeads} />
+            <FunnelTile label={t("Perdidos", "Lost")} value={metrics.lostLeads} />
+          </div>
+        </PremiumCard>
+
+        <PremiumCard className="p-4 md:p-5">
           <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Resumen rapido", "Quick summary")}</p>
           <div className="mt-4 grid grid-cols-1 gap-3">
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
               <Users className="h-4 w-4 text-[#E5C76B]" />
               <div>
                 <p className="text-sm text-[#F5F3EE]">{t("Leads activos", "Active leads")}</p>
-                <p className="text-xs text-[#B9B4A9]">{metrics.qualifiedLeads + metrics.scheduledLeads}</p>
+                <p className="text-xs text-[#B9B4A9]">{metrics.newLeads + metrics.qualifiedLeads + metrics.scheduledLeads}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
               <PhoneCall className="h-4 w-4 text-[#6FA8FF]" />
               <div>
-                <p className="text-sm text-[#F5F3EE]">{t("Handoffs", "Handoffs")}</p>
-                <p className="text-xs text-[#B9B4A9]">{metrics.handoffs}</p>
+                <p className="text-sm text-[#F5F3EE]">{t("Duracion promedio", "Average duration")}</p>
+                <p className="text-xs text-[#B9B4A9]">{metrics.avgDurationSeconds}s</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
               <Target className="h-4 w-4 text-[#E5C76B]" />
               <div>
-                <p className="text-sm text-[#F5F3EE]">{t("Conversion", "Conversion")}</p>
-                <p className="text-xs text-[#B9B4A9]">{metrics.closeRate}%</p>
+                <p className="text-sm text-[#F5F3EE]">{t("No-answer", "No-answer")}</p>
+                <p className="text-xs text-[#B9B4A9]">{metrics.callsNoAnswer} ({metrics.noAnswerRate}%)</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+              <Sparkles className="h-4 w-4 text-[#6FA8FF]" />
+              <div>
+                <p className="text-sm text-[#F5F3EE]">{t("Numeros activos", "Active numbers")}</p>
+                <p className="text-xs text-[#B9B4A9]">{metrics.activeNumbers}</p>
               </div>
             </div>
           </div>
@@ -120,6 +213,15 @@ export default async function DashboardPage() {
           )}
         </div>
       </PremiumCard>
+    </div>
+  );
+}
+
+function FunnelTile(props: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <p className="text-xs uppercase tracking-[0.1em] text-[#A7A296]">{props.label}</p>
+      <p className="mt-2 text-2xl font-semibold text-[#F5F3EE]">{props.value}</p>
     </div>
   );
 }

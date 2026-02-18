@@ -1,6 +1,7 @@
 import { TwilioNumberForm } from "@/components/app/twilio-number-form";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { db } from "@/lib/db";
+import { cn } from "@/lib/utils";
 import { translate } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
@@ -15,6 +16,36 @@ export default async function SettingsPage() {
     db.twilioPhoneNumber.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" } }),
     db.agentConfig.findUnique({ where: { workspaceId } }),
   ]);
+
+  const checklistItems = [
+    {
+      label: t("Numero inbound activo", "Active inbound number"),
+      done: numbers.some((item) => item.isActive),
+    },
+    {
+      label: t("Mensaje de bienvenida configurado", "Greeting message configured"),
+      done: Boolean(config?.greetingMessage && config.greetingMessage.length >= 12),
+    },
+    {
+      label: t("Prompt y checklist completos", "Prompt and checklist complete"),
+      done:
+        Boolean(config?.systemPrompt && config.systemPrompt.length >= 140) &&
+        Array.isArray(config?.qualificationChecklist) &&
+        config.qualificationChecklist.length >= 3,
+    },
+    {
+      label: t("Telefono de handoff definido", "Handoff phone configured"),
+      done: !config?.handoffEnabled || Boolean(config?.handoffPhone),
+    },
+    {
+      label: t("Agenda conectada (recomendado)", "Calendar connected (recommended)"),
+      done: Boolean(config?.calendarLink),
+    },
+  ];
+
+  const readinessScore = Math.round(
+    (checklistItems.filter((item) => item.done).length / checklistItems.length) * 100,
+  );
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -51,6 +82,39 @@ export default async function SettingsPage() {
           </div>
         </PremiumCard>
       </div>
+
+      <PremiumCard className="space-y-4 p-4 md:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Readiness", "Readiness")}</p>
+            <h2 className="mt-1 text-lg font-semibold text-[#F5F3EE]">{t("Checklist operativo del workspace", "Workspace operational checklist")}</h2>
+          </div>
+          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-[#E5C76B]">{readinessScore}%</span>
+        </div>
+
+        <div className="h-2 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#6FA8FF] to-[#E5C76B]"
+            style={{ width: `${readinessScore}%` }}
+          />
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2">
+          {checklistItems.map((item) => (
+            <div
+              key={item.label}
+              className={cn(
+                "rounded-xl border px-3 py-2 text-sm",
+                item.done
+                  ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100"
+                  : "border-white/10 bg-white/5 text-[#CFCAC0]",
+              )}
+            >
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </PremiumCard>
 
       <PremiumCard className="space-y-4 p-4 md:p-5">
         <div>

@@ -25,15 +25,30 @@ export async function createInboundCall(params: {
     },
   });
 
-  return db.call.upsert({
+  const existing = await db.call.findUnique({
     where: { twilioCallSid: params.twilioCallSid },
-    update: {
-      status: CallStatus.in_progress,
-      leadId: lead.id,
-      fromNumber: params.fromNumber,
-      toNumber: params.toNumber,
-    },
-    create: {
+    include: { lead: true },
+  });
+
+  if (existing) {
+    const call = await db.call.update({
+      where: { id: existing.id },
+      data: {
+        status: existing.endedAt ? existing.status : CallStatus.in_progress,
+        leadId: lead.id,
+        fromNumber: params.fromNumber,
+        toNumber: params.toNumber,
+      },
+      include: {
+        lead: true,
+      },
+    });
+
+    return { call, isNew: false };
+  }
+
+  const call = await db.call.create({
+    data: {
       workspaceId: params.workspaceId,
       twilioCallSid: params.twilioCallSid,
       fromNumber: params.fromNumber,
@@ -45,6 +60,8 @@ export async function createInboundCall(params: {
       lead: true,
     },
   });
+
+  return { call, isNew: true };
 }
 
 export async function appendTranscriptTurn(params: {
@@ -177,21 +194,59 @@ export async function getCallContext(params: { workspaceId: string; callId: stri
   });
 }
 
+export async function getCallByProviderSid(callSid: string) {
+  return db.call.findUnique({
+    where: { twilioCallSid: callSid },
+    select: {
+      id: true,
+      workspaceId: true,
+      twilioCallSid: true,
+      status: true,
+      endedAt: true,
+    },
+  });
+}
+
 export async function completeCall(params: {
   workspaceId: string;
   callSid: string;
   status: CallStatus;
   durationSeconds?: number;
 }) {
+  const isTerminal =
+    params.status === CallStatus.completed ||
+    params.status === CallStatus.failed ||
+    params.status === CallStatus.no_answer;
+
+  const durationSeconds =
+    typeof params.durationSeconds === "number" && Number.isFinite(params.durationSeconds)
+      ? Math.max(0, Math.round(params.durationSeconds))
+      : undefined;
+
+  if (isTerminal) {
+    return db.call.updateMany({
+      where: {
+        workspaceId: params.workspaceId,
+        twilioCallSid: params.callSid,
+        endedAt: null,
+      },
+      data: {
+        status: params.status,
+        durationSeconds,
+        endedAt: new Date(),
+      },
+    });
+  }
+
   return db.call.updateMany({
     where: {
       workspaceId: params.workspaceId,
       twilioCallSid: params.callSid,
+      endedAt: null,
     },
     data: {
       status: params.status,
-      durationSeconds: params.durationSeconds,
-      endedAt: new Date(),
+      durationSeconds,
     },
   });
 }
