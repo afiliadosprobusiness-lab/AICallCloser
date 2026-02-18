@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleAlert, PhoneCall, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
 
+import { LocalDateTime } from "@/components/app/local-date-time";
 import { OutboundCallLauncher } from "@/components/app/outbound-call-launcher";
 import { AIThinkingIndicator } from "@/components/premium/ai-thinking-indicator";
 import { CallsLineChart } from "@/components/premium/calls-line-chart";
@@ -209,9 +210,7 @@ export default async function DashboardPage() {
               >
                 <div>
                   <p className="text-sm text-[#F5F3EE]">{call.lead?.phone ?? call.fromNumber}</p>
-                  <p className="text-xs text-[#A7A296]">
-                    {new Date(call.startedAt).toLocaleString(locale === "en" ? "en-US" : "es-ES")}
-                  </p>
+                  <LocalDateTime value={new Date(call.startedAt).toISOString()} className="text-xs text-[#A7A296]" />
                 </div>
                 <OutcomeBadge outcome={call.outcome} />
               </div>
