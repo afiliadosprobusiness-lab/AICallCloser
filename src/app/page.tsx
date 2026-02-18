@@ -572,6 +572,41 @@ export default function HomePage() {
             </div>
           </motion.div>
         </section>
+
+        <footer className="border-t border-white/10 px-1 pt-6">
+          <div className="flex flex-col gap-4 pb-6 text-sm text-white/65 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-1">
+              <p className="font-medium text-white/85">
+                {t("AI Call Closer - Afiliados Pro Business Lab", "AI Call Closer - Afiliados Pro Business Lab")}
+              </p>
+              <p>
+                {t(
+                  "Disenado y creado por Afiliados Pro Business Lab. Todos los derechos reservados.",
+                  "Designed and created by Afiliados Pro Business Lab. All rights reserved.",
+                )}
+              </p>
+              <p>{t("Contacto: afiliadosprobusiness@gmail.com", "Contact: afiliadosprobusiness@gmail.com")}</p>
+              <p>
+                {t(
+                  "Servicio SaaS B2B para automatizacion de llamadas, calificacion de leads y agenda comercial.",
+                  "B2B SaaS for call automation, lead qualification, and sales scheduling.",
+                )}
+              </p>
+            </div>
+
+            <nav className="flex flex-wrap gap-4 text-sm">
+              <Link href="/privacy" className="transition-colors hover:text-white">
+                {t("Privacidad", "Privacy")}
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-white">
+                {t("Terminos", "Terms")}
+              </Link>
+              <Link href="/about-us" className="transition-colors hover:text-white">
+                {t("Quienes somos", "About us")}
+              </Link>
+            </nav>
+          </div>
+        </footer>
       </div>
     </div>
   );
