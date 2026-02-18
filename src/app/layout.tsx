@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 
 import { FirebaseProvider } from "@/components/providers/firebase-provider";
@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   title: "AI Call Closer",
   description: "SaaS premium multi-tenant para cerrar ventas con llamadas IA.",
 };
+
+export const revalidate = 0;
 
 export default function RootLayout({
   children,
