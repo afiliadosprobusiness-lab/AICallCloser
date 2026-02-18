@@ -36,26 +36,36 @@ export function GoogleAuthButton({
     };
   }, []);
 
-  if (googleState !== "enabled") {
-    return null;
-  }
-
   return (
-    <div className="iridescent-border rounded-xl">
-      <Button
-        type="button"
-        variant="ghost"
-        disabled={isPending}
-        onClick={() =>
-          startTransition(async () => {
-            await signIn("google", { callbackUrl });
-          })
-        }
-        className="iridescent-surface h-11 w-full rounded-xl border border-white/15 bg-white/[0.04] text-[#ECE8DE] hover:text-[#F7F4EC]"
-      >
-        <GoogleGlyph />
-        {isPending ? t("Conectando...", "Connecting...") : label}
-      </Button>
+    <div className="space-y-2">
+      <div className="iridescent-border rounded-xl">
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={isPending || googleState !== "enabled"}
+          onClick={() =>
+            startTransition(async () => {
+              await signIn("google", { callbackUrl });
+            })
+          }
+          className="iridescent-surface h-11 w-full rounded-xl border border-white/15 bg-white/[0.04] text-[#ECE8DE] hover:text-[#F7F4EC] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <GoogleGlyph />
+          {googleState === "loading"
+            ? t("Verificando Google...", "Checking Google...")
+            : isPending
+              ? t("Conectando...", "Connecting...")
+              : label}
+        </Button>
+      </div>
+      {googleState === "disabled" ? (
+        <p className="text-xs text-amber-200/85">
+          {t(
+            "Activa Google con GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.",
+            "Enable Google with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+          )}
+        </p>
+      ) : null}
     </div>
   );
 }
