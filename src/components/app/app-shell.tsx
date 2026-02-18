@@ -6,6 +6,7 @@ import {
   Activity,
   Bot,
   LayoutDashboard,
+  Shield,
   PhoneCall,
   Settings,
   Users,
@@ -23,6 +24,8 @@ const navItems = [
   { href: "/settings", label: "Ajustes", icon: Settings },
 ];
 
+const superAdminItem = { href: "/super-admin", label: "Super Admin", icon: Shield };
+
 type WorkspaceOption = {
   id: string;
   name: string;
@@ -34,8 +37,15 @@ export function AppShell(props: {
   userName: string;
   workspaces: WorkspaceOption[];
   activeWorkspaceId: string | null;
+  isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
+  const items =
+    props.isSuperAdmin && props.workspaces.length === 0
+      ? [superAdminItem]
+      : props.isSuperAdmin
+        ? [superAdminItem, ...navItems]
+        : navItems;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
@@ -49,7 +59,7 @@ export function AppShell(props: {
           activeWorkspaceId={props.activeWorkspaceId}
         />
         <nav className="mt-6 flex flex-1 flex-col gap-2">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
 
@@ -97,7 +107,7 @@ export function AppShell(props: {
 
       <nav className="premium-glass fixed inset-x-3 bottom-3 z-40 rounded-2xl p-2 md:hidden">
         <ul className="grid grid-cols-5 gap-2">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
 

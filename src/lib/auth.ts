@@ -5,8 +5,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 
+import { isSuperAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { ensureUserAccess } from "@/lib/user-access";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -37,6 +39,16 @@ const providers: NextAuthOptions["providers"] = [
       });
 
       if (!user?.passwordHash) {
+        return null;
+      }
+
+      const accessAllowed = await ensureUserAccess({
+        id: user.id,
+        accessStatus: user.accessStatus,
+        accessDisabledUntil: user.accessDisabledUntil,
+      });
+
+      if (!accessAllowed) {
         return null;
       }
 
@@ -79,19 +91,55 @@ export const authOptions: NextAuthOptions = {
   },
   providers,
   callbacks: {
+    async signIn({ user }) {
+      if (!user.email) {
+        return false;
+      }
+
+      const dbUser = await db.user.findUnique({
+        where: { email: user.email.toLowerCase() },
+        select: {
+          id: true,
+          accessStatus: true,
+          accessDisabledUntil: true,
+        },
+      });
+
+      if (!dbUser) {
+        return true;
+      }
+
+      return ensureUserAccess(dbUser);
+    },
     async jwt({ token, user }) {
       if (user) {
         token.activeWorkspaceId = user.activeWorkspaceId;
+        token.email = user.email;
       }
 
-      if (!token.activeWorkspaceId && token.sub) {
+      if (token.sub) {
         const dbUser = await db.user.findUnique({
           where: { id: token.sub },
-          include: { memberships: { orderBy: { createdAt: "asc" } } },
+          include: {
+            memberships: { orderBy: { createdAt: "asc" } },
+          },
         });
+
+        if (dbUser) {
+          const accessAllowed = await ensureUserAccess({
+            id: dbUser.id,
+            accessStatus: dbUser.accessStatus,
+            accessDisabledUntil: dbUser.accessDisabledUntil,
+          });
+
+          token.accessDenied = !accessAllowed;
+        } else {
+          token.accessDenied = true;
+        }
 
         token.activeWorkspaceId =
           dbUser?.activeWorkspaceId ?? dbUser?.memberships[0]?.workspaceId ?? null;
+        token.isSuperAdmin = isSuperAdminEmail(dbUser?.email);
       }
 
       return token;
@@ -103,6 +151,8 @@ export const authOptions: NextAuthOptions = {
 
       session.user.id = token.sub ?? "";
       session.user.activeWorkspaceId = token.activeWorkspaceId ?? null;
+      session.user.isSuperAdmin = Boolean(token.isSuperAdmin);
+      session.user.accessDenied = Boolean(token.accessDenied);
 
       return session;
     },

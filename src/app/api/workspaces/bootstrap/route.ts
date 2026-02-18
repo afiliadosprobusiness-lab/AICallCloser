@@ -110,6 +110,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: { message: "Unauthorized" } }, { status: 401 });
     }
 
+    if (error instanceof Error && error.message === "ACCOUNT_DISABLED") {
+      return NextResponse.json({ ok: false, error: { message: "Account disabled" } }, { status: 403 });
+    }
+
     return NextResponse.json(
       { ok: false, error: { message: "No se pudo preparar el workspace." } },
       { status: 500 },

@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 
+import { isSuperAdminEmail } from "@/lib/admin";
 import { OnboardingWorkspaceForm } from "@/components/auth/onboarding-workspace-form";
 import { RegisterForm } from "@/components/auth/register-form";
 import { authOptions } from "@/lib/auth";
@@ -11,6 +12,10 @@ export default async function RegisterPage() {
   const session = await getServerSession(authOptions);
 
   if (session?.user?.id) {
+    if (isSuperAdminEmail(session.user.email)) {
+      redirect("/super-admin");
+    }
+
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: {

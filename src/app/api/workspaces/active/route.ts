@@ -30,6 +30,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: { message: "Unauthorized" } }, { status: 401 });
     }
 
+    if (error instanceof Error && error.message === "ACCOUNT_DISABLED") {
+      return NextResponse.json({ ok: false, error: { message: "Account disabled" } }, { status: 403 });
+    }
+
     if (error instanceof Error && error.message === "WORKSPACE_FORBIDDEN") {
       return NextResponse.json({ ok: false, error: { message: "Forbidden" } }, { status: 403 });
     }

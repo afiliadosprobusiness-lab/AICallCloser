@@ -35,14 +35,14 @@ export function SignInForm() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push("/post-auth");
       router.refresh();
     });
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <GoogleAuthButton callbackUrl="/dashboard" label="Continuar con Google" />
+      <GoogleAuthButton callbackUrl="/post-auth" label="Continuar con Google" />
 
       <div className="relative py-1">
         <div className="h-px w-full bg-white/10" />
