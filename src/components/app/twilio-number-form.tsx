@@ -12,6 +12,15 @@ type VoiceNumberFormProps = {
   providerLabel?: string;
 };
 
+type NumberFormApiError = {
+  ok?: boolean;
+  error?: {
+    message?: string;
+    formErrors?: string[];
+    fieldErrors?: Record<string, string[]>;
+  };
+};
+
 export function TwilioNumberForm(props: VoiceNumberFormProps) {
   const router = useRouter();
   const { t } = useLocale();
@@ -30,16 +39,26 @@ export function TwilioNumberForm(props: VoiceNumberFormProps) {
       const response = await fetch(settingsEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber, friendlyName }),
+        body: JSON.stringify({ phoneNumber: phoneNumber.trim(), friendlyName: friendlyName.trim() }),
       });
 
+      const result = (await response.json().catch(() => null)) as NumberFormApiError | null;
+
       if (!response.ok) {
+        const fallbackFieldError = result?.error?.fieldErrors
+          ? Object.values(result.error.fieldErrors).flat().find(Boolean)
+          : undefined;
+
         setStatus({
           type: "error",
-          message: t(
-            `No se pudo guardar el numero de ${providerLabel}. Verifica formato y permisos.`,
-            `Could not save the ${providerLabel} number. Verify format and permissions.`,
-          ),
+          message:
+            result?.error?.message ??
+            result?.error?.formErrors?.[0] ??
+            fallbackFieldError ??
+            t(
+              `No se pudo guardar el numero de ${providerLabel}. Verifica formato y permisos.`,
+              `Could not save the ${providerLabel} number. Verify format and permissions.`,
+            ),
         });
         return;
       }

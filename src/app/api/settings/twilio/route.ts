@@ -4,9 +4,12 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
 
+const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((value) => (value === "" ? undefined : value), schema);
+
 const payloadSchema = z.object({
-  phoneNumber: z.string().min(7),
-  friendlyName: z.string().min(2).max(80).optional(),
+  phoneNumber: z.string().trim().min(7),
+  friendlyName: emptyToUndefined(z.string().trim().min(2).max(80).optional()),
   isActive: z.boolean().default(true),
 });
 
@@ -26,6 +29,17 @@ export async function GET() {
 
     if (error instanceof Error && error.message === "ACCOUNT_DISABLED") {
       return NextResponse.json({ ok: false, error: { message: "Account disabled" } }, { status: 403 });
+    }
+
+    if (error instanceof Error && error.message === "WORKSPACE_NOT_SELECTED") {
+      return NextResponse.json(
+        { ok: false, error: { message: "Workspace not selected" } },
+        { status: 400 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "WORKSPACE_FORBIDDEN") {
+      return NextResponse.json({ ok: false, error: { message: "Forbidden workspace" } }, { status: 403 });
     }
 
     return NextResponse.json({ ok: false, error: { message: "Internal error" } }, { status: 500 });
@@ -67,6 +81,17 @@ export async function POST(request: Request) {
 
     if (error instanceof Error && error.message === "ACCOUNT_DISABLED") {
       return NextResponse.json({ ok: false, error: { message: "Account disabled" } }, { status: 403 });
+    }
+
+    if (error instanceof Error && error.message === "WORKSPACE_NOT_SELECTED") {
+      return NextResponse.json(
+        { ok: false, error: { message: "Workspace not selected" } },
+        { status: 400 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "WORKSPACE_FORBIDDEN") {
+      return NextResponse.json({ ok: false, error: { message: "Forbidden workspace" } }, { status: 403 });
     }
 
     return NextResponse.json({ ok: false, error: { message: "Internal error" } }, { status: 500 });
