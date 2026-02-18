@@ -1,6 +1,6 @@
 ﻿import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { env } from "@/lib/env";
+import { requireEnvVar } from "@/lib/env";
 
 function base64url(input: Buffer | string) {
   return Buffer.from(input)
@@ -17,20 +17,22 @@ function unbase64url(input: string) {
 }
 
 export function signTtsPayload(payload: { text: string; workspaceId: string; voice: string; model: string }) {
+  const nextAuthSecret = requireEnvVar("NEXTAUTH_SECRET");
   const raw = JSON.stringify(payload);
   const encoded = base64url(raw);
-  const signature = createHmac("sha256", env.NEXTAUTH_SECRET).update(encoded).digest("hex");
+  const signature = createHmac("sha256", nextAuthSecret).update(encoded).digest("hex");
   return `${encoded}.${signature}`;
 }
 
 export function verifyTtsPayload(token: string) {
+  const nextAuthSecret = requireEnvVar("NEXTAUTH_SECRET");
   const [encoded, signature] = token.split(".");
 
   if (!encoded || !signature) {
     return null;
   }
 
-  const expected = createHmac("sha256", env.NEXTAUTH_SECRET).update(encoded).digest("hex");
+  const expected = createHmac("sha256", nextAuthSecret).update(encoded).digest("hex");
 
   const signatureBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expected);

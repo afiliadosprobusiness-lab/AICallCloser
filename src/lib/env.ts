@@ -5,9 +5,9 @@ const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: emptyToUndefined(z.string().min(1).optional()),
   NEXTAUTH_URL: emptyToUndefined(z.string().url().optional()),
-  NEXTAUTH_SECRET: z.string().min(16),
+  NEXTAUTH_SECRET: emptyToUndefined(z.string().min(16).optional()),
   AUTH_TRUST_HOST: emptyToUndefined(z.string().optional()),
   APP_URL: z.string().url().default("http://localhost:3000"),
   OPENAI_API_KEY: emptyToUndefined(z.string().optional()),
@@ -29,3 +29,13 @@ export const env = envSchema.parse({
   ...process.env,
   APP_URL: process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000",
 });
+
+export function requireEnvVar<K extends keyof typeof env>(key: K) {
+  const value = env[key];
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${String(key)}`);
+  }
+
+  return value;
+}
