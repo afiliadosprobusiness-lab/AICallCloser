@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleAlert, PhoneCall, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
 
+import { OutboundCallLauncher } from "@/components/app/outbound-call-launcher";
 import { AIThinkingIndicator } from "@/components/premium/ai-thinking-indicator";
 import { CallsLineChart } from "@/components/premium/calls-line-chart";
 import { KpiCard } from "@/components/premium/kpi-card";
@@ -8,6 +9,7 @@ import { PremiumCard } from "@/components/premium/premium-card";
 import { translate } from "@/lib/i18n/config";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
+import { getVoiceProvider } from "@/lib/voice/provider";
 import { getDashboardMetrics } from "@/modules/metrics/service";
 
 export default async function DashboardPage() {
@@ -15,6 +17,9 @@ export default async function DashboardPage() {
   const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId } = await getWorkspaceContextOrThrow();
   const metrics = await getDashboardMetrics(workspaceId);
+  const voiceProvider = getVoiceProvider();
+  const providerLabel = voiceProvider === "twilio" ? "Twilio" : voiceProvider === "plivo" ? "Plivo" : "Telnyx";
+  const outboundEndpoint = `/api/${voiceProvider}/voice/outbound`;
 
   const readinessLabels = [
     t("Agente configurado", "Agent configured"),
@@ -184,6 +189,7 @@ export default async function DashboardPage() {
               </div>
             </div>
           </div>
+          <OutboundCallLauncher endpoint={outboundEndpoint} providerLabel={providerLabel} />
         </PremiumCard>
       </div>
 
