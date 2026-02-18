@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 
+import { LocaleProvider } from "@/components/providers/locale-provider";
 import { FirebaseProvider } from "@/components/providers/firebase-provider";
+import { getRequestLocale } from "@/lib/i18n/server";
 
 import "./globals.css";
 
@@ -24,15 +26,19 @@ export const metadata: Metadata = {
 
 export const revalidate = 0;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getRequestLocale();
+
   return (
-    <html lang="es" className="dark">
+    <html lang={locale} className="dark">
       <body className={`${manrope.variable} ${playfair.variable} antialiased`}>
-        <FirebaseProvider>{children}</FirebaseProvider>
+        <LocaleProvider locale={locale}>
+          <FirebaseProvider>{children}</FirebaseProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

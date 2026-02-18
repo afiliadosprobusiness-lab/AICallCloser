@@ -13,19 +13,26 @@ import {
   Users,
 } from "lucide-react";
 
+import { LanguageToggle } from "@/components/language-toggle";
+import { useLocale } from "@/components/providers/locale-provider";
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/leads", label: "Leads", icon: Users },
-  { href: "/calls", label: "Calls", icon: PhoneCall },
-  { href: "/agent", label: "Agente IA", icon: Bot },
-  { href: "/settings", label: "Ajustes", icon: Settings },
+  { href: "/dashboard", labelEs: "Dashboard", labelEn: "Dashboard", icon: LayoutDashboard },
+  { href: "/leads", labelEs: "Leads", labelEn: "Leads", icon: Users },
+  { href: "/calls", labelEs: "Llamadas", labelEn: "Calls", icon: PhoneCall },
+  { href: "/agent", labelEs: "Agente IA", labelEn: "AI Agent", icon: Bot },
+  { href: "/settings", labelEs: "Ajustes", labelEn: "Settings", icon: Settings },
 ];
 
-const superAdminItem = { href: "/super-admin", label: "Super Admin", icon: Shield };
+const superAdminItem = {
+  href: "/super-admin",
+  labelEs: "Super Admin",
+  labelEn: "Super Admin",
+  icon: Shield,
+};
 
 type WorkspaceOption = {
   id: string;
@@ -42,8 +49,12 @@ export function AppShell(props: {
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLocale();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
-  const items = useMemo(() => (props.isSuperAdmin ? [superAdminItem] : navItems), [props.isSuperAdmin]);
+  const items = useMemo(
+    () => (props.isSuperAdmin ? [superAdminItem] : navItems),
+    [props.isSuperAdmin],
+  );
   const optimisticPath = pendingPath && pendingPath !== pathname ? pendingPath : null;
 
   useEffect(() => {
@@ -65,8 +76,13 @@ export function AppShell(props: {
     <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
       <aside className="premium-glass gold-sheen hidden w-[280px] shrink-0 rounded-3xl p-5 md:flex md:flex-col">
         <div className="mb-6">
+          <div className="mb-3 flex justify-end">
+            <LanguageToggle compact />
+          </div>
           <p className="font-serif text-2xl text-[#F5F3EE]">AI Call Closer</p>
-          <p className="text-sm text-[#B9B4A9]">Workspace premium de conversion</p>
+          <p className="text-sm text-[#B9B4A9]">
+            {t("Workspace premium de conversion", "Premium conversion workspace")}
+          </p>
         </div>
         {!props.isSuperAdmin ? (
           <WorkspaceSwitcher
@@ -96,7 +112,7 @@ export function AppShell(props: {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelEs, item.labelEn)}
               </Link>
             );
           })}
@@ -105,7 +121,7 @@ export function AppShell(props: {
           <div className="flex items-center gap-2 rounded-xl border border-[#E5C76B]/20 bg-white/5 p-3">
             <Activity className="h-4 w-4 text-[#E5C76B]" />
             <div>
-              <p className="text-xs text-[#B9B4A9]">Operador</p>
+              <p className="text-xs text-[#B9B4A9]">{t("Operador", "Operator")}</p>
               <p className="text-sm text-[#F5F3EE]">{props.userName}</p>
             </div>
           </div>
@@ -115,6 +131,7 @@ export function AppShell(props: {
 
       <main className="w-full min-w-0 flex-1">
         <div className="premium-glass mb-4 flex items-center gap-3 rounded-2xl p-3 md:hidden">
+          <LanguageToggle compact />
           <div className="flex-1">
             {!props.isSuperAdmin ? (
               <WorkspaceSwitcher
@@ -151,7 +168,7 @@ export function AppShell(props: {
                   )}
                 >
                   <Icon className="mb-1 h-4 w-4" />
-                  {item.label}
+                  {t(item.labelEs, item.labelEn)}
                 </Link>
               </li>
             );

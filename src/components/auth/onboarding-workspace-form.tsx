@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ export function OnboardingWorkspaceForm({
   defaultWorkspace: string;
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -42,7 +44,7 @@ export function OnboardingWorkspaceForm({
       };
 
       if (!response.ok || !result.ok) {
-        setError(result.error?.message ?? "No se pudo crear tu workspace.");
+        setError(result.error?.message ?? t("No se pudo crear tu workspace.", "Could not create your workspace."));
         return;
       }
 
@@ -54,7 +56,7 @@ export function OnboardingWorkspaceForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Nombre</Label>
+        <Label htmlFor="name">{t("Nombre", "Name")}</Label>
         <Input id="name" name="name" defaultValue={defaultName} required className="h-11 rounded-xl bg-white/5" />
       </div>
 
@@ -76,7 +78,7 @@ export function OnboardingWorkspaceForm({
         disabled={isPending}
         className="h-11 w-full rounded-xl bg-[#C9A227] text-[#14110A] hover:bg-[#E5C76B]"
       >
-        {isPending ? "Preparando workspace..." : "Continuar"}
+        {isPending ? t("Preparando workspace...", "Preparing workspace...") : t("Continuar", "Continue")}
       </Button>
     </form>
   );

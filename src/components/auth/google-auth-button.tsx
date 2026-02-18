@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useTransition } from "react";
 import { getProviders, signIn } from "next-auth/react";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 
 type ProvidersMap = Record<string, { id: string; name: string }>;
@@ -15,6 +16,7 @@ export function GoogleAuthButton({
   callbackUrl: string;
   label: string;
 }) {
+  const { t } = useLocale();
   const [googleState, setGoogleState] = useState<GoogleState>("loading");
   const [isPending, startTransition] = useTransition();
 
@@ -52,7 +54,7 @@ export function GoogleAuthButton({
         className="iridescent-surface h-11 w-full rounded-xl border border-white/15 bg-white/[0.04] text-[#ECE8DE] hover:text-[#F7F4EC]"
       >
         <GoogleGlyph />
-        {isPending ? "Conectando..." : label}
+        {isPending ? t("Conectando...", "Connecting...") : label}
       </Button>
     </div>
   );

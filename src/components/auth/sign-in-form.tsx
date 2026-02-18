@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -7,12 +7,14 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function SignInForm() {
   const router = useRouter();
+  const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +33,7 @@ export function SignInForm() {
       });
 
       if (result?.error) {
-        setError("Credenciales invalidas.");
+        setError(t("Credenciales invalidas.", "Invalid credentials."));
         return;
       }
 
@@ -42,12 +44,12 @@ export function SignInForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <GoogleAuthButton callbackUrl="/post-auth" label="Continuar con Google" />
+      <GoogleAuthButton callbackUrl="/post-auth" label={t("Continuar con Google", "Continue with Google")} />
 
       <div className="relative py-1">
         <div className="h-px w-full bg-white/10" />
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#111111]/80 px-2 text-[11px] uppercase tracking-[0.14em] text-[#9D988D]">
-          o con email
+          {t("o con email", "or with email")}
         </span>
       </div>
 
@@ -64,9 +66,9 @@ export function SignInForm() {
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("Password", "Password")}</Label>
           <Link href="/forgot-password" className="text-xs text-[#E5C76B] hover:text-[#F2D98E]">
-            Recuperar contraseña
+            {t("Recuperar contrasena", "Forgot password")}
           </Link>
         </div>
         <div className="relative">
@@ -83,7 +85,7 @@ export function SignInForm() {
             type="button"
             onClick={() => setShowPassword((value) => !value)}
             className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border border-transparent text-[#B9B4A9] transition-all duration-200 hover:border-[#7595FF]/35 hover:bg-[#5E94FF]/10 hover:text-[#F5F3EE] active:scale-[0.97]"
-            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-label={showPassword ? t("Ocultar contrasena", "Hide password") : t("Mostrar contrasena", "Show password")}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -96,7 +98,7 @@ export function SignInForm() {
           disabled={isPending}
           className="iridescent-surface h-11 w-full rounded-xl bg-gradient-to-r from-[#C9A227] via-[#E4C667] to-[#F0D98F] text-[#14110A] hover:brightness-105"
         >
-          {isPending ? "Ingresando..." : "Entrar"}
+          {isPending ? t("Ingresando...", "Signing in...") : t("Entrar", "Sign in")}
         </Button>
       </div>
     </form>

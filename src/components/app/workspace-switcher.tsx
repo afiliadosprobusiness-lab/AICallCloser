@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ export function WorkspaceSwitcher(props: {
   activeWorkspaceId: string | null;
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [value, setValue] = useState(props.activeWorkspaceId ?? props.workspaces[0]?.id ?? "");
   const [isPending, startTransition] = useTransition();
 
@@ -48,7 +50,7 @@ export function WorkspaceSwitcher(props: {
   return (
     <Select value={value} onValueChange={onChange} disabled={isPending}>
       <SelectTrigger className="h-10 rounded-xl border-[#E5C76B]/30 bg-[#121212]/80 text-[#F5F3EE]">
-        <SelectValue placeholder="Selecciona workspace" />
+        <SelectValue placeholder={t("Selecciona workspace", "Select workspace")} />
       </SelectTrigger>
       <SelectContent className="border-[#E5C76B]/20 bg-[#141414] text-[#F5F3EE]">
         {props.workspaces.map((workspace) => (

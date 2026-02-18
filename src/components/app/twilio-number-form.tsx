@@ -1,13 +1,15 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function TwilioNumberForm() {
   const router = useRouter();
+  const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
@@ -40,7 +42,7 @@ export function TwilioNumberForm() {
       <Input
         value={friendlyName}
         onChange={(e) => setFriendlyName(e.target.value)}
-        placeholder="Inbound principal"
+        placeholder={t("Inbound principal", "Main inbound")}
         className="h-11 rounded-xl border-white/15 bg-white/5"
       />
       <Button
@@ -48,7 +50,7 @@ export function TwilioNumberForm() {
         disabled={isPending}
         className="h-11 rounded-xl bg-[#C9A227] px-5 text-[#18140D] hover:bg-[#E5C76B]"
       >
-        {isPending ? "Guardando" : "Agregar"}
+        {isPending ? t("Guardando", "Saving") : t("Agregar", "Add")}
       </Button>
     </form>
   );

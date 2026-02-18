@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -15,6 +15,8 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 
+import { LanguageToggle } from "@/components/language-toggle";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,94 +30,13 @@ type SimpleSession = {
   };
 };
 
-const navItems = [
-  { href: "#producto", label: "Producto" },
-  { href: "#precios", label: "Precios" },
-  { href: "#seguridad", label: "Seguridad" },
-];
-
-const conversation = [
-  {
-    speaker: "Cliente",
-    text: "Hola, quiero info para vender 2 propiedades este mes.",
-    side: "left" as const,
-  },
-  {
-    speaker: "AI Call Closer",
-    text: "Perfecto. ¿Ya trabajas con un sistema de captación de leads?",
-    side: "right" as const,
-  },
-  {
-    speaker: "Cliente",
-    text: "Sí, recibimos muchas llamadas y no alcanzamos a responder todo.",
-    side: "left" as const,
-  },
-  {
-    speaker: "AI Call Closer",
-    text: "Te agendo una demo hoy 5:30 PM y te conecto con un closer senior.",
-    side: "right" as const,
-  },
-];
-
-const stats = [
-  { value: "37%", label: "de llamadas se pierden fuera de horario" },
-  { value: "42%", label: "menos conversión por llamadas no atendidas" },
-  { value: "3.1x", label: "más citas cuando la respuesta es inmediata" },
-];
-
-const steps = [
-  {
-    title: "Conecta tu número",
-    description: "Integra tu línea con Twilio en minutos, sin cambiar tu operación actual.",
-    icon: PhoneCall,
-  },
-  {
-    title: "Configura tu agente",
-    description: "Define guion, filtros de lead, reglas de agenda y criterios de handoff.",
-    icon: Sparkles,
-  },
-  {
-    title: "La IA atiende y agenda",
-    description: "Responde en tiempo real, califica intención y transfiere cuando detecta cierre.",
-    icon: CalendarClock,
-  },
-];
-
-const securityPoints = [
-  "Grabación opcional por workspace",
-  "Validación de webhooks Twilio",
-  "Datos cifrados en tránsito y en reposo",
-  "Arquitectura multi-tenant con aislamiento por workspace",
-];
-
-const plans = [
-  {
-    name: "Starter",
-    price: "$149",
-    subtitle: "Ideal para equipos pequeños",
-    features: ["1 número", "Hasta 1,000 min/mes", "Calificación automática"],
-  },
-  {
-    name: "Pro",
-    price: "$399",
-    subtitle: "Para operación comercial activa",
-    features: ["3 números", "Hasta 5,000 min/mes", "Agenda + handoff inteligente"],
-    featured: true,
-  },
-  {
-    name: "Scale",
-    price: "Custom",
-    subtitle: "Volumen enterprise",
-    features: ["Números ilimitados", "SLA dedicado", "Seguridad y soporte avanzado"],
-  },
-];
-
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
   show: { opacity: 1, y: 0 },
 };
 
 export default function HomePage() {
+  const { t } = useLocale();
   const [session, setSession] = useState<SimpleSession | null>(null);
 
   useEffect(() => {
@@ -139,6 +60,139 @@ export default function HomePage() {
     };
   }, []);
 
+  const navItems = useMemo(
+    () => [
+      { href: "#producto", label: t("Producto", "Product") },
+      { href: "#precios", label: t("Precios", "Pricing") },
+      { href: "#seguridad", label: t("Seguridad", "Security") },
+    ],
+    [t],
+  );
+
+  const conversation = useMemo(
+    () => [
+      {
+        speaker: t("Cliente", "Customer"),
+        text: t(
+          "Hola, quiero info para vender 2 propiedades este mes.",
+          "Hi, I want details to sell 2 properties this month.",
+        ),
+        side: "left" as const,
+      },
+      {
+        speaker: "AI Call Closer",
+        text: t(
+          "Perfecto. Ya trabajas con un sistema de captacion de leads?",
+          "Perfect. Are you already using a lead capture system?",
+        ),
+        side: "right" as const,
+      },
+      {
+        speaker: t("Cliente", "Customer"),
+        text: t(
+          "Si, recibimos muchas llamadas y no alcanzamos a responder todo.",
+          "Yes, we receive many calls and cannot answer all of them.",
+        ),
+        side: "left" as const,
+      },
+      {
+        speaker: "AI Call Closer",
+        text: t(
+          "Te agendo una demo hoy 5:30 PM y te conecto con un closer senior.",
+          "I will schedule a demo today at 5:30 PM and connect you with a senior closer.",
+        ),
+        side: "right" as const,
+      },
+    ],
+    [t],
+  );
+
+  const stats = useMemo(
+    () => [
+      { value: "37%", label: t("de llamadas se pierden fuera de horario", "of calls are missed after hours") },
+      { value: "42%", label: t("menos conversion por llamadas no atendidas", "less conversion from missed calls") },
+      { value: "3.1x", label: t("mas citas cuando la respuesta es inmediata", "more appointments with immediate response") },
+    ],
+    [t],
+  );
+
+  const steps = useMemo(
+    () => [
+      {
+        title: t("Conecta tu numero", "Connect your number"),
+        description: t(
+          "Integra tu linea con Plivo en minutos, sin cambiar tu operacion actual.",
+          "Integrate your line with Plivo in minutes, without changing your current operation.",
+        ),
+        icon: PhoneCall,
+      },
+      {
+        title: t("Configura tu agente", "Configure your agent"),
+        description: t(
+          "Define guion, filtros de lead, reglas de agenda y criterios de handoff.",
+          "Define script, lead filters, scheduling rules and handoff criteria.",
+        ),
+        icon: Sparkles,
+      },
+      {
+        title: t("La IA atiende y agenda", "AI answers and books"),
+        description: t(
+          "Responde en tiempo real, califica intencion y transfiere cuando detecta cierre.",
+          "Responds in real time, qualifies intent, and transfers when it detects high closing intent.",
+        ),
+        icon: CalendarClock,
+      },
+    ],
+    [t],
+  );
+
+  const securityPoints = useMemo(
+    () => [
+      t("Grabacion opcional por workspace", "Optional recording by workspace"),
+      t("Validacion de webhooks", "Webhook validation"),
+      t("Datos cifrados en transito y en reposo", "Data encrypted in transit and at rest"),
+      t("Arquitectura multi-tenant con aislamiento por workspace", "Multi-tenant architecture with workspace isolation"),
+    ],
+    [t],
+  );
+
+  const plans = useMemo(
+    () => [
+      {
+        name: "Starter",
+        price: "$149",
+        subtitle: t("Ideal para equipos pequenos", "Ideal for small teams"),
+        features: [
+          t("1 numero", "1 number"),
+          t("Hasta 1,000 min/mes", "Up to 1,000 min/month"),
+          t("Calificacion automatica", "Automatic qualification"),
+        ],
+      },
+      {
+        name: "Pro",
+        price: "$399",
+        subtitle: t("Para operacion comercial activa", "For active sales operations"),
+        features: [
+          t("3 numeros", "3 numbers"),
+          t("Hasta 5,000 min/mes", "Up to 5,000 min/month"),
+          t("Agenda + handoff inteligente", "Scheduling + smart handoff"),
+        ],
+        featured: true,
+      },
+      {
+        name: "Scale",
+        price: "Custom",
+        subtitle: t("Volumen enterprise", "Enterprise volume"),
+        features: [
+          t("Numeros ilimitados", "Unlimited numbers"),
+          "SLA",
+          t("Seguridad y soporte avanzado", "Advanced security and support"),
+        ],
+      },
+    ],
+    [t],
+  );
+
   const isAuthenticated = Boolean(session?.user?.id);
 
   const primaryHref = useMemo(
@@ -146,7 +200,7 @@ export default function HomePage() {
     [isAuthenticated],
   );
 
-  const primaryLabel = isAuthenticated ? "Ir al Dashboard" : "Crear Cuenta";
+  const primaryLabel = isAuthenticated ? t("Ir al Dashboard", "Go to Dashboard") : t("Crear Cuenta", "Create Account");
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
@@ -178,12 +232,13 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <LanguageToggle compact />
               <Button
                 asChild
                 variant="ghost"
                 className="hidden border border-white/10 bg-white/[0.02] text-white/80 hover:bg-white/[0.07] hover:text-white sm:inline-flex"
               >
-                <Link href="/sign-in">Iniciar sesión</Link>
+                <Link href="/sign-in">{t("Iniciar sesion", "Sign in")}</Link>
               </Button>
               <Button
                 asChild
@@ -195,10 +250,7 @@ export default function HomePage() {
           </nav>
         </header>
 
-        <section
-          id="producto"
-          className="scroll-mt-28 px-1 pb-18 pt-16 md:pb-24 md:pt-24"
-        >
+        <section id="producto" className="scroll-mt-28 px-1 pb-18 pt-16 md:pb-24 md:pt-24">
           <motion.div
             initial="hidden"
             animate="show"
@@ -217,7 +269,7 @@ export default function HomePage() {
               className="mt-7 text-balance text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl"
             >
               <span className="bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
-                Tu equipo nunca vuelve a perder una llamada.
+                {t("Tu equipo nunca vuelve a perder una llamada.", "Your team never misses a call again.")}
               </span>
             </motion.h1>
 
@@ -227,8 +279,10 @@ export default function HomePage() {
               transition={{ delay: 0.24, duration: 0.8 }}
               className="mx-auto mt-6 max-w-3xl text-pretty text-base leading-relaxed text-white/70 sm:text-lg"
             >
-              Automatiza llamadas entrantes con un agente de IA que califica, agenda y
-              transfiere en tiempo real.
+              {t(
+                "Automatiza llamadas entrantes con un agente de IA que califica, agenda y transfiere en tiempo real.",
+                "Automate inbound calls with an AI agent that qualifies, schedules and transfers in real time.",
+              )}
             </motion.p>
 
             <motion.div
@@ -243,7 +297,7 @@ export default function HomePage() {
                 className="h-12 w-full bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] text-white shadow-[0_0_32px_rgba(86,92,255,0.4)] hover:opacity-95 sm:w-auto"
               >
                 <Link href={primaryHref}>
-                  Empieza Gratis
+                  {t("Empieza Gratis", "Start Free")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -253,7 +307,7 @@ export default function HomePage() {
                 variant="ghost"
                 className="h-12 w-full border border-white/15 bg-white/[0.03] text-white/85 hover:bg-white/[0.08] sm:w-auto"
               >
-                <Link href="/sign-in">Ver Demo</Link>
+                <Link href="/sign-in">{t("Ver Demo", "Watch Demo")}</Link>
               </Button>
             </motion.div>
           </motion.div>
@@ -271,8 +325,8 @@ export default function HomePage() {
               <CardContent className="p-5 sm:p-7 md:p-8">
                 <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/50">Live call</p>
-                    <p className="text-sm text-white/80">Pipeline de ventas activo</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-white/50">{t("Llamada en vivo", "Live call")}</p>
+                    <p className="text-sm text-white/80">{t("Pipeline de ventas activo", "Active sales pipeline")}</p>
                   </div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200">
                     <motion.span
@@ -280,7 +334,7 @@ export default function HomePage() {
                       transition={{ repeat: Infinity, duration: 1.5 }}
                       className="h-2 w-2 rounded-full bg-emerald-300"
                     />
-                    Call in progress
+                    {t("Llamada en progreso", "Call in progress")}
                   </div>
                 </div>
 
@@ -337,9 +391,9 @@ export default function HomePage() {
 
         <section className="scroll-mt-28 px-1 pb-16">
           <SectionTitle
-            eyebrow="Cómo funciona"
-            title="Implementación en 3 pasos"
-            description="No cambias tu stack comercial. Solo activas un sistema que responde, filtra y agenda por ti."
+            eyebrow={t("Como funciona", "How it works")}
+            title={t("Implementacion en 3 pasos", "3-step implementation")}
+            description={t("No cambias tu stack comercial. Solo activas un sistema que responde, filtra y agenda por ti.", "You keep your current sales stack. You just activate a system that answers, filters and schedules for you.")}
           />
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -375,9 +429,9 @@ export default function HomePage() {
 
         <section id="seguridad" className="scroll-mt-28 px-1 pb-16">
           <SectionTitle
-            eyebrow="Seguridad & Compliance"
-            title="Diseñado para operaciones B2B serias"
-            description="Arquitectura pensada para equipos que operan volumen y necesitan trazabilidad completa."
+            eyebrow="Security & Compliance"
+            title={t("Disenado para operaciones B2B serias", "Built for serious B2B operations")}
+            description={t("Arquitectura pensada para equipos que operan volumen y necesitan trazabilidad completa.", "Architecture designed for teams running volume and needing full traceability.")}
           />
 
           <motion.div
@@ -407,13 +461,15 @@ export default function HomePage() {
                     Security First
                   </div>
                   <p className="text-sm leading-relaxed text-white/72">
-                    Logs estructurados por llamada, verificación de firma en webhooks y control por
-                    workspace desde una arquitectura multi-tenant.
+                    {t(
+                      "Logs estructurados por llamada, verificacion de firma en webhooks y control por workspace desde una arquitectura multi-tenant.",
+                      "Structured call logs, webhook signature verification and workspace control over a multi-tenant architecture.",
+                    )}
                   </p>
                 </div>
                 <div className="mt-6 grid grid-cols-2 gap-3 text-xs text-white/65">
-                  <MiniStat icon={Lock} label="Encriptación" value="TLS + at-rest" />
-                  <MiniStat icon={UserRoundCheck} label="Validación" value="Twilio signed" />
+                  <MiniStat icon={Lock} label={t("Encriptacion", "Encryption")} value="TLS + at-rest" />
+                  <MiniStat icon={UserRoundCheck} label={t("Validacion", "Validation")} value="Signed" />
                 </div>
               </CardContent>
             </Card>
@@ -423,8 +479,8 @@ export default function HomePage() {
         <section id="precios" className="scroll-mt-28 px-1 pb-16">
           <SectionTitle
             eyebrow="Pricing"
-            title="Planes para cada etapa de crecimiento"
-            description="Empieza pequeño y escala a operación enterprise sin rehacer tu proceso."
+            title={t("Planes para cada etapa de crecimiento", "Plans for every growth stage")}
+            description={t("Empieza pequeno y escala a operacion enterprise sin rehacer tu proceso.", "Start small and scale to enterprise operations without rebuilding your process.")}
           />
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -469,7 +525,7 @@ export default function HomePage() {
                           : "bg-white/10 text-white hover:bg-white/15",
                       )}
                     >
-                      <Link href={`/register?plan=${plan.name.toLowerCase()}`}>Crear Cuenta</Link>
+                      <Link href={`/register?plan=${plan.name.toLowerCase()}`}>{t("Crear Cuenta", "Create Account")}</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -489,17 +545,19 @@ export default function HomePage() {
           >
             <p className="text-xs uppercase tracking-[0.16em] text-white/75">Ready to launch</p>
             <h2 className="mt-3 max-w-2xl text-balance text-3xl font-semibold leading-tight sm:text-4xl">
-              Activa tu agente en 5 minutos.
+              {t("Activa tu agente en 5 minutos.", "Activate your agent in 5 minutes.")}
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
-              Convierte más llamadas en reuniones de venta sin aumentar headcount. Tu equipo se
-              enfoca en cerrar, la IA se encarga del primer contacto.
+              {t(
+                "Convierte mas llamadas en reuniones de venta sin aumentar headcount. Tu equipo se enfoca en cerrar, la IA se encarga del primer contacto.",
+                "Turn more calls into sales meetings without increasing headcount. Your team focuses on closing while AI handles first contact.",
+              )}
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-12 bg-white text-[#1A2456] hover:bg-white/90">
                 <Link href={primaryHref}>
-                  {isAuthenticated ? "Abrir Dashboard" : "Empieza Gratis"}
+                  {isAuthenticated ? t("Abrir Dashboard", "Open Dashboard") : t("Empieza Gratis", "Start Free")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -509,7 +567,7 @@ export default function HomePage() {
                 variant="ghost"
                 className="h-12 border border-white/30 bg-white/10 text-white hover:bg-white/20"
               >
-                <Link href="/sign-in">Ver Demo</Link>
+                <Link href="/sign-in">{t("Ver Demo", "Watch Demo")}</Link>
               </Button>
             </div>
           </motion.div>

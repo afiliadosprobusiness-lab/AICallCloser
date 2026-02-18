@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Eye, EyeOff } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -6,12 +6,14 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function RegisterForm() {
   const router = useRouter();
+  const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -52,7 +54,12 @@ export function RegisterForm() {
           ? Object.values(result.error.fieldErrors).flat().find(Boolean)
           : undefined;
 
-        setError(result.error?.message ?? result.error?.formErrors?.[0] ?? fallbackFieldError ?? "No se pudo crear la cuenta.");
+        setError(
+          result.error?.message ??
+            result.error?.formErrors?.[0] ??
+            fallbackFieldError ??
+            t("No se pudo crear la cuenta.", "Could not create account."),
+        );
         return;
       }
 
@@ -69,17 +76,17 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <GoogleAuthButton callbackUrl="/post-auth" label="Registrarme con Google" />
+      <GoogleAuthButton callbackUrl="/post-auth" label={t("Registrarme con Google", "Sign up with Google")} />
 
       <div className="relative py-1">
         <div className="h-px w-full bg-white/10" />
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#111111]/80 px-2 text-[11px] uppercase tracking-[0.14em] text-[#9D988D]">
-          o con email
+          {t("o con email", "or with email")}
         </span>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="name">Nombre</Label>
+        <Label htmlFor="name">{t("Nombre", "Name")}</Label>
         <Input id="name" name="name" required className="h-11 rounded-xl bg-white/5" />
       </div>
       <div className="space-y-2">
@@ -102,7 +109,7 @@ export function RegisterForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t("Password", "Password")}</Label>
         <div className="relative">
           <Input
             id="password"
@@ -116,7 +123,7 @@ export function RegisterForm() {
             type="button"
             onClick={() => setShowPassword((value) => !value)}
             className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border border-transparent text-[#B9B4A9] transition-all duration-200 hover:border-[#7595FF]/35 hover:bg-[#5E94FF]/10 hover:text-[#F5F3EE] active:scale-[0.97]"
-            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-label={showPassword ? t("Ocultar contrasena", "Hide password") : t("Mostrar contrasena", "Show password")}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -129,7 +136,7 @@ export function RegisterForm() {
           disabled={isPending}
           className="iridescent-surface h-11 w-full rounded-xl bg-gradient-to-r from-[#C9A227] via-[#E4C667] to-[#F0D98F] text-[#14110A] hover:brightness-105"
         >
-          {isPending ? "Creando cuenta..." : "Crear cuenta"}
+          {isPending ? t("Creando cuenta...", "Creating account...") : t("Crear cuenta", "Create account")}
         </Button>
       </div>
     </form>

@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useTransition } from "react";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ type AgentConfigInput = {
 };
 
 export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
+  const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<string>("");
 
@@ -95,9 +97,9 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
       });
 
       if (response.ok) {
-        setStatus("Configuracion guardada.");
+        setStatus(t("Configuracion guardada.", "Configuration saved."));
       } else {
-        setStatus("No se pudo guardar.");
+        setStatus(t("No se pudo guardar.", "Could not save."));
       }
     });
   }
@@ -105,14 +107,14 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <details open className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-[#F5F3EE]">Perfil del agente</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-[#F5F3EE]">{t("Perfil del agente", "Agent profile")}</summary>
         <div className="mt-3 space-y-3">
           <div className="space-y-2">
-            <Label>Nombre del agente</Label>
+            <Label>{t("Nombre del agente", "Agent name")}</Label>
             <Input value={agentName} onChange={(e) => setAgentName(e.target.value)} className="h-11" />
           </div>
           <div className="space-y-2">
-            <Label>Mensaje de bienvenida</Label>
+            <Label>{t("Mensaje de bienvenida", "Welcome message")}</Label>
             <Textarea
               value={greetingMessage}
               onChange={(e) => setGreetingMessage(e.target.value)}
@@ -123,14 +125,14 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
       </details>
 
       <details open className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-[#F5F3EE]">Prompt y guardrails</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-[#F5F3EE]">{t("Prompt y guardrails", "Prompt and guardrails")}</summary>
         <div className="mt-3 space-y-3">
           <div className="space-y-2">
-            <Label>System prompt</Label>
+            <Label>{t("System prompt", "System prompt")}</Label>
             <Textarea value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} rows={6} />
           </div>
           <div className="space-y-2">
-            <Label>Checklist calificacion (1 por linea)</Label>
+            <Label>{t("Checklist calificacion (1 por linea)", "Qualification checklist (1 per line)")}</Label>
             <Textarea
               value={qualificationChecklist}
               onChange={(e) => setQualificationChecklist(e.target.value)}
@@ -138,7 +140,7 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Claims prohibidos (1 por linea)</Label>
+            <Label>{t("Claims prohibidos (1 por linea)", "Disallowed claims (1 per line)")}</Label>
             <Textarea
               value={disallowedClaims}
               onChange={(e) => setDisallowedClaims(e.target.value)}
@@ -146,7 +148,7 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Pricing rules (JSON)</Label>
+            <Label>{t("Pricing rules (JSON)", "Pricing rules (JSON)")}</Label>
             <Textarea value={pricingRules} onChange={(e) => setPricingRules(e.target.value)} rows={6} />
           </div>
         </div>
@@ -154,22 +156,22 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
 
       <details open className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-[#F5F3EE]">
-          Modelos y handoff
+          {t("Modelos y handoff", "Models and handoff")}
         </summary>
         <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
           <Field label="LLM model" value={llmModel} onChange={setLlmModel} />
           <Field label="STT model" value={sttModel} onChange={setSttModel} />
           <Field label="TTS model" value={voiceModel} onChange={setVoiceModel} />
           <Field label="TTS voice" value={ttsVoice} onChange={setTtsVoice} />
-          <Field label="Telefono handoff" value={handoffPhone} onChange={setHandoffPhone} />
-          <Field label="Link agenda" value={calendarLink} onChange={setCalendarLink} />
+          <Field label={t("Telefono handoff", "Handoff phone")} value={handoffPhone} onChange={setHandoffPhone} />
+          <Field label={t("Link agenda", "Calendar link")} value={calendarLink} onChange={setCalendarLink} />
           <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-[#D8D3C7]">
             <input
               type="checkbox"
               checked={handoffEnabled}
               onChange={(e) => setHandoffEnabled(e.target.checked)}
             />
-            Handoff humano habilitado
+            {t("Handoff humano habilitado", "Human handoff enabled")}
           </label>
         </div>
       </details>
@@ -180,7 +182,7 @@ export function AgentConfigForm({ initial }: { initial: AgentConfigInput }) {
           disabled={isPending}
           className="h-11 rounded-xl bg-[#C9A227] px-5 text-[#18140D] hover:bg-[#E5C76B]"
         >
-          {isPending ? "Guardando..." : "Guardar configuracion"}
+          {isPending ? t("Guardando...", "Saving...") : t("Guardar configuracion", "Save configuration")}
         </Button>
         {status ? <p className="text-sm text-[#B9B4A9]">{status}</p> : null}
       </div>

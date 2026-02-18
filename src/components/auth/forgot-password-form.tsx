@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ type ForgotPasswordResponse = {
 };
 
 export function ForgotPasswordForm() {
+  const { t } = useLocale();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -40,13 +42,16 @@ export function ForgotPasswordForm() {
       const result = (await response.json().catch(() => null)) as ForgotPasswordResponse | null;
 
       if (!response.ok || !result?.ok) {
-        setError(result?.error?.message ?? "No se pudo procesar la solicitud.");
+        setError(result?.error?.message ?? t("No se pudo procesar la solicitud.", "Could not process request."));
         return;
       }
 
       setMessage(
         result.data?.message ??
-          "Si tu correo existe en el sistema, recibirás un enlace de recuperación.",
+          t(
+            "Si tu correo existe en el sistema, recibiras un enlace de recuperacion.",
+            "If your email exists in the system, you will receive a recovery link.",
+          ),
       );
     });
   }
@@ -73,7 +78,7 @@ export function ForgotPasswordForm() {
           disabled={isPending}
           className="iridescent-surface h-11 w-full rounded-xl bg-gradient-to-r from-[#C9A227] via-[#E4C667] to-[#F0D98F] text-[#14110A] hover:brightness-105"
         >
-          {isPending ? "Enviando..." : "Enviar enlace de recuperación"}
+          {isPending ? t("Enviando...", "Sending...") : t("Enviar enlace de recuperacion", "Send recovery link")}
         </Button>
       </div>
     </form>

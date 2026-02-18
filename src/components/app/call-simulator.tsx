@@ -1,13 +1,15 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function CallSimulator({ callId }: { callId: string }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [text, setText] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -33,7 +35,7 @@ export function CallSimulator({ callId }: { callId: string }) {
       <Input
         value={text}
         onChange={(event) => setText(event.target.value)}
-        placeholder="Simular frase del lead..."
+        placeholder={t("Simular frase del lead...", "Simulate a lead sentence...")}
         required
         className="h-11 rounded-xl border-white/15 bg-white/5"
       />
@@ -42,7 +44,7 @@ export function CallSimulator({ callId }: { callId: string }) {
         disabled={isPending}
         className="h-11 rounded-xl bg-[#C9A227] px-5 text-[#18140D] hover:bg-[#E5C76B]"
       >
-        {isPending ? "Procesando" : "Enviar a IA"}
+        {isPending ? t("Procesando", "Processing") : t("Enviar a IA", "Send to AI")}
       </Button>
     </form>
   );

@@ -1,4 +1,7 @@
-﻿import { Badge } from "@/components/ui/badge";
+"use client";
+
+import { useLocale } from "@/components/providers/locale-provider";
+import { Badge } from "@/components/ui/badge";
 
 const styles: Record<string, string> = {
   qualified: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
@@ -10,7 +13,17 @@ const styles: Record<string, string> = {
 };
 
 export function OutcomeBadge({ outcome }: { outcome: string }) {
-  const label = outcome.replace(/_/g, " ");
+  const { t } = useLocale();
+  const labels: Record<string, string> = {
+    qualified: t("calificado", "qualified"),
+    scheduled: t("agendado", "scheduled"),
+    handoff: "handoff",
+    follow_up: t("seguimiento", "follow up"),
+    not_qualified: t("no calificado", "not qualified"),
+    unknown: t("desconocido", "unknown"),
+  };
+
+  const label = labels[outcome] ?? outcome.replace(/_/g, " ");
 
   return (
     <Badge className={`rounded-full border px-2.5 py-1 text-[11px] uppercase ${styles[outcome] ?? styles.unknown}`}>

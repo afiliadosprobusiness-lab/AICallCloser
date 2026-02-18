@@ -1,10 +1,14 @@
-﻿import { CallSimulator } from "@/components/app/call-simulator";
+import { CallSimulator } from "@/components/app/call-simulator";
 import { OutcomeBadge } from "@/components/premium/outcome-badge";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { db } from "@/lib/db";
+import { translate } from "@/lib/i18n/config";
+import { getRequestLocale } from "@/lib/i18n/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
 
 export default async function CallsPage() {
+  const locale = await getRequestLocale();
+  const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId } = await getWorkspaceContextOrThrow();
 
   const calls = await db.call.findMany({
@@ -24,27 +28,23 @@ export default async function CallsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <PremiumCard className="p-5 md:p-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-[#A7A296]">Calls</p>
-        <h1 className="mt-2 font-serif text-3xl text-[#F5F3EE]">Historial y transcript</h1>
-        <p className="mt-2 text-sm text-[#B9B4A9]">
-          Revisa outcomes, transcript completo y simulacion de turnos IA.
-        </p>
+        <p className="text-xs uppercase tracking-[0.2em] text-[#A7A296]">{t("Llamadas", "Calls")}</p>
+        <h1 className="mt-2 font-serif text-3xl text-[#F5F3EE]">{t("Historial y transcript", "History and transcript")}</h1>
+        <p className="mt-2 text-sm text-[#B9B4A9]">{t("Revisa outcomes, transcript completo y simulacion de turnos IA.", "Review outcomes, full transcript and AI turn simulation.")}</p>
       </PremiumCard>
 
       {selectedCall ? (
         <PremiumCard className="p-4">
-          <p className="mb-2 text-xs uppercase tracking-[0.14em] text-[#A7A296]">
-            Simulador rapido
-          </p>
+          <p className="mb-2 text-xs uppercase tracking-[0.14em] text-[#A7A296]">{t("Simulador rapido", "Quick simulator")}</p>
           <CallSimulator callId={selectedCall.id} />
         </PremiumCard>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <PremiumCard className="space-y-3 p-4">
-          <h2 className="text-lg font-semibold text-[#F5F3EE]">Llamadas recientes</h2>
+          <h2 className="text-lg font-semibold text-[#F5F3EE]">{t("Llamadas recientes", "Recent calls")}</h2>
           {calls.length === 0 ? (
-            <p className="text-sm text-[#A7A296]">No hay llamadas registradas.</p>
+            <p className="text-sm text-[#A7A296]">{t("No hay llamadas registradas.", "No calls recorded.")}</p>
           ) : (
             calls.map((call) => (
               <div
@@ -55,7 +55,7 @@ export default async function CallsPage() {
                   <p className="text-sm font-medium text-[#F5F3EE]">{call.fromNumber}</p>
                   <OutcomeBadge outcome={call.outcome} />
                 </div>
-                <p className="text-xs text-[#A7A296]">{new Date(call.startedAt).toLocaleString("es-ES")}</p>
+                <p className="text-xs text-[#A7A296]">{new Date(call.startedAt).toLocaleString(locale === "en" ? "en-US" : "es-ES")}</p>
               </div>
             ))
           )}
@@ -64,9 +64,9 @@ export default async function CallsPage() {
         <PremiumCard className="p-4">
           <h2 className="mb-3 text-lg font-semibold text-[#F5F3EE]">Transcript</h2>
           {!selectedCall ? (
-            <p className="text-sm text-[#A7A296]">Selecciona una llamada.</p>
+            <p className="text-sm text-[#A7A296]">{t("Selecciona una llamada.", "Select a call.")}</p>
           ) : selectedCall.transcripts.length === 0 ? (
-            <p className="text-sm text-[#A7A296]">Sin transcript todavia.</p>
+            <p className="text-sm text-[#A7A296]">{t("Sin transcript todavia.", "No transcript yet.")}</p>
           ) : (
             <div className="space-y-3">
               {selectedCall.transcripts.map((turn) => (

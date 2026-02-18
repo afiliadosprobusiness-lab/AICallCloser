@@ -34,3 +34,9 @@
 - App routes use src/app/(app)/loading.tsx for responsive skeleton loading feedback.
 - Auth JWT sync with DB is throttled (30s window) to reduce repeated query cost while navigating.
 
+
+## Localization
+- Global ES/EN locale selector is available via LanguageToggle in landing, auth and app shell.
+- Locale is persisted in cookie icallcloser_locale via POST /api/preferences/locale.
+- Root layout reads locale server-side and sets <html lang> accordingly.
+
