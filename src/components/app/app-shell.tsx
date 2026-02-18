@@ -40,12 +40,7 @@ export function AppShell(props: {
   isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  const items =
-    props.isSuperAdmin && props.workspaces.length === 0
-      ? [superAdminItem]
-      : props.isSuperAdmin
-        ? [superAdminItem, ...navItems]
-        : navItems;
+  const items = props.isSuperAdmin ? [superAdminItem] : navItems;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
@@ -54,10 +49,12 @@ export function AppShell(props: {
           <p className="font-serif text-2xl text-[#F5F3EE]">AI Call Closer</p>
           <p className="text-sm text-[#B9B4A9]">Workspace premium de conversion</p>
         </div>
-        <WorkspaceSwitcher
-          workspaces={props.workspaces}
-          activeWorkspaceId={props.activeWorkspaceId}
-        />
+        {!props.isSuperAdmin ? (
+          <WorkspaceSwitcher
+            workspaces={props.workspaces}
+            activeWorkspaceId={props.activeWorkspaceId}
+          />
+        ) : null}
         <nav className="mt-6 flex flex-1 flex-col gap-2">
           {items.map((item) => {
             const Icon = item.icon;
@@ -95,10 +92,12 @@ export function AppShell(props: {
       <main className="w-full flex-1">
         <div className="premium-glass mb-4 flex items-center gap-3 rounded-2xl p-3 md:hidden">
           <div className="flex-1">
-            <WorkspaceSwitcher
-              workspaces={props.workspaces}
-              activeWorkspaceId={props.activeWorkspaceId}
-            />
+            {!props.isSuperAdmin ? (
+              <WorkspaceSwitcher
+                workspaces={props.workspaces}
+                activeWorkspaceId={props.activeWorkspaceId}
+              />
+            ) : null}
           </div>
           <SignOutButton />
         </div>
@@ -106,7 +105,9 @@ export function AppShell(props: {
       </main>
 
       <nav className="premium-glass fixed inset-x-3 bottom-3 z-40 rounded-2xl p-2 md:hidden">
-        <ul className="grid grid-cols-5 gap-2">
+        <ul
+          className={cn("grid gap-2", items.length === 1 ? "grid-cols-1" : "grid-cols-5")}
+        >
           {items.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
