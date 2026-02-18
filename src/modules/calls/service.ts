@@ -1,7 +1,19 @@
-﻿import { CallObjective, CallOutcome, CallStatus, LeadStatus, Prisma, TranscriptSpeaker } from "@prisma/client";
+import { CallObjective, CallOutcome, CallStatus, LeadStatus, Prisma, TranscriptSpeaker } from "@prisma/client";
 
-import { db } from "@/lib/db";
 import { type AIDecision } from "@/lib/ai/types";
+import { db } from "@/lib/db";
+
+function hasMissingColumnError(error: unknown, columnName: string) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message.toLowerCase().includes(columnName.toLowerCase());
+}
 
 export async function createInboundCall(params: {
   workspaceId: string;
@@ -23,11 +35,35 @@ export async function createInboundCall(params: {
       source: "inbound_call",
       status: LeadStatus.new,
     },
+    select: {
+      id: true,
+    },
   });
 
   const existing = await db.call.findUnique({
     where: { twilioCallSid: params.twilioCallSid },
-    include: { lead: true },
+    select: {
+      id: true,
+      workspaceId: true,
+      leadId: true,
+      twilioCallSid: true,
+      fromNumber: true,
+      toNumber: true,
+      status: true,
+      outcome: true,
+      durationSeconds: true,
+      summary: true,
+      startedAt: true,
+      endedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      lead: {
+        select: {
+          id: true,
+          phone: true,
+        },
+      },
+    },
   });
 
   if (existing) {
@@ -39,8 +75,27 @@ export async function createInboundCall(params: {
         fromNumber: params.fromNumber,
         toNumber: params.toNumber,
       },
-      include: {
-        lead: true,
+      select: {
+        id: true,
+        workspaceId: true,
+        leadId: true,
+        twilioCallSid: true,
+        fromNumber: true,
+        toNumber: true,
+        status: true,
+        outcome: true,
+        durationSeconds: true,
+        summary: true,
+        startedAt: true,
+        endedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        lead: {
+          select: {
+            id: true,
+            phone: true,
+          },
+        },
       },
     });
 
@@ -56,8 +111,27 @@ export async function createInboundCall(params: {
       status: CallStatus.in_progress,
       leadId: lead.id,
     },
-    include: {
-      lead: true,
+    select: {
+      id: true,
+      workspaceId: true,
+      leadId: true,
+      twilioCallSid: true,
+      fromNumber: true,
+      toNumber: true,
+      status: true,
+      outcome: true,
+      durationSeconds: true,
+      summary: true,
+      startedAt: true,
+      endedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      lead: {
+        select: {
+          id: true,
+          phone: true,
+        },
+      },
     },
   });
 
@@ -92,15 +166,54 @@ export async function applyDecisionToCall(params: {
   objectiveApplied?: CallObjective;
   leadCustomFields?: Record<string, unknown>;
 }) {
-  const call = await db.call.findFirst({
-    where: {
-      id: params.callId,
-      workspaceId: params.workspaceId,
-    },
-    include: {
-      lead: true,
-    },
-  });
+  let includesLeadCustomFields = true;
+  let call:
+    | {
+        id: string;
+        leadId: string | null;
+        lead: { id: string; customFields?: Prisma.JsonValue | null } | null;
+      }
+    | null = null;
+
+  try {
+    call = await db.call.findFirst({
+      where: {
+        id: params.callId,
+        workspaceId: params.workspaceId,
+      },
+      select: {
+        id: true,
+        leadId: true,
+        lead: {
+          select: {
+            id: true,
+            customFields: true,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    if (!hasMissingColumnError(error, "Lead.customFields")) {
+      throw error;
+    }
+
+    includesLeadCustomFields = false;
+    call = await db.call.findFirst({
+      where: {
+        id: params.callId,
+        workspaceId: params.workspaceId,
+      },
+      select: {
+        id: true,
+        leadId: true,
+        lead: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+  }
 
   if (!call?.lead) {
     throw new Error("CALL_OR_LEAD_NOT_FOUND");
@@ -142,7 +255,9 @@ export async function applyDecisionToCall(params: {
   const mergedCustomFields =
     params.leadCustomFields && Object.keys(params.leadCustomFields).length > 0
       ? {
-          ...(typeof call.lead.customFields === "object" && call.lead.customFields !== null
+          ...(includesLeadCustomFields &&
+          typeof call.lead.customFields === "object" &&
+          call.lead.customFields !== null
             ? (call.lead.customFields as Record<string, unknown>)
             : {}),
           ...params.leadCustomFields,
@@ -150,28 +265,66 @@ export async function applyDecisionToCall(params: {
       : undefined;
 
   await db.$transaction(async (tx) => {
-    await tx.lead.update({
-      where: { id: call.leadId ?? "" },
-      data: {
-        fullName: params.decision.leadUpdates.fullName ?? undefined,
-        email: params.decision.leadUpdates.email ?? undefined,
-        company: params.decision.leadUpdates.company ?? undefined,
-        notes: params.decision.leadUpdates.notes ?? undefined,
-        score: {
-          increment: params.decision.leadUpdates.scoreDelta,
-        },
-        status: nextLeadStatus,
-        customFields: (mergedCustomFields as Prisma.InputJsonValue | undefined) ?? undefined,
+    const leadUpdateData: Prisma.LeadUpdateInput = {
+      fullName: params.decision.leadUpdates.fullName ?? undefined,
+      email: params.decision.leadUpdates.email ?? undefined,
+      company: params.decision.leadUpdates.company ?? undefined,
+      notes: params.decision.leadUpdates.notes ?? undefined,
+      score: {
+        increment: params.decision.leadUpdates.scoreDelta,
       },
-    });
+      status: nextLeadStatus,
+    };
 
-    await tx.call.update({
-      where: { id: call.id },
-      data: {
-        outcome: nextOutcome,
-        objectiveApplied: params.objectiveApplied,
-      },
-    });
+    if (includesLeadCustomFields && mergedCustomFields) {
+      leadUpdateData.customFields = mergedCustomFields as Prisma.InputJsonValue;
+    }
+
+    try {
+      await tx.lead.update({
+        where: { id: call.leadId ?? "" },
+        data: leadUpdateData,
+      });
+    } catch (error) {
+      if (!hasMissingColumnError(error, "Lead.customFields")) {
+        throw error;
+      }
+
+      await tx.lead.update({
+        where: { id: call.leadId ?? "" },
+        data: {
+          fullName: params.decision.leadUpdates.fullName ?? undefined,
+          email: params.decision.leadUpdates.email ?? undefined,
+          company: params.decision.leadUpdates.company ?? undefined,
+          notes: params.decision.leadUpdates.notes ?? undefined,
+          score: {
+            increment: params.decision.leadUpdates.scoreDelta,
+          },
+          status: nextLeadStatus,
+        },
+      });
+    }
+
+    try {
+      await tx.call.update({
+        where: { id: call.id },
+        data: {
+          outcome: nextOutcome,
+          objectiveApplied: params.objectiveApplied,
+        },
+      });
+    } catch (error) {
+      if (!hasMissingColumnError(error, "Call.objectiveApplied")) {
+        throw error;
+      }
+
+      await tx.call.update({
+        where: { id: call.id },
+        data: {
+          outcome: nextOutcome,
+        },
+      });
+    }
 
     if (params.decision.action === "handoff" && params.handoffPhone) {
       await tx.handoff.upsert({
@@ -214,10 +367,25 @@ export async function getCallContext(params: { workspaceId: string; callId: stri
       workspaceId: params.workspaceId,
       id: params.callId,
     },
-    include: {
-      lead: true,
+    select: {
+      id: true,
+      leadId: true,
+      twilioCallSid: true,
+      lead: {
+        select: {
+          id: true,
+          phone: true,
+        },
+      },
       transcripts: {
         orderBy: { spokenAt: "asc" },
+        select: {
+          id: true,
+          speaker: true,
+          text: true,
+          metadata: true,
+          spokenAt: true,
+        },
       },
     },
   });

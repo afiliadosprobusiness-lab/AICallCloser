@@ -151,14 +151,27 @@ async function updateLeadRequiredFields(ctx: ObjectiveSuccessContext) {
     return {};
   }
 
-  const existing = await db.lead.findUnique({
-    where: { id: ctx.leadId },
-    select: { customFields: true },
-  });
+  let existingCustomFields: unknown = null;
+  let supportsCustomFields = true;
+
+  try {
+    const existing = await db.lead.findUnique({
+      where: { id: ctx.leadId },
+      select: { customFields: true },
+    });
+    existingCustomFields = existing?.customFields;
+  } catch (error) {
+    supportsCustomFields =
+      !(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") &&
+      !(error instanceof Error && error.message.toLowerCase().includes("lead.customfields"));
+    if (supportsCustomFields) {
+      throw error;
+    }
+  }
 
   const current =
-    typeof existing?.customFields === "object" && existing.customFields !== null
-      ? (existing.customFields as Record<string, unknown>)
+    typeof existingCustomFields === "object" && existingCustomFields !== null
+      ? (existingCustomFields as Record<string, unknown>)
       : {};
 
   const collected: Record<string, unknown> = {};
@@ -172,12 +185,23 @@ async function updateLeadRequiredFields(ctx: ObjectiveSuccessContext) {
 
   const merged = { ...current, ...collected };
 
-  await db.lead.update({
-    where: { id: ctx.leadId },
-    data: {
-      customFields: merged as Prisma.InputJsonValue,
-    },
-  });
+  if (supportsCustomFields) {
+    try {
+      await db.lead.update({
+        where: { id: ctx.leadId },
+        data: {
+          customFields: merged as Prisma.InputJsonValue,
+        },
+      });
+    } catch (error) {
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") &&
+        !(error instanceof Error && error.message.toLowerCase().includes("lead.customfields"))
+      ) {
+        throw error;
+      }
+    }
+  }
 
   return merged;
 }
