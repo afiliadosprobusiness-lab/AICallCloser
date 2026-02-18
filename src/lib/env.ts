@@ -3,10 +3,13 @@
 const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), schema);
 
+const trimmedLowercase = (value: unknown) =>
+  typeof value === "string" ? value.trim().toLowerCase() : value;
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: emptyToUndefined(z.string().min(1).optional()),
-  VOICE_PROVIDER: z.enum(["telnyx", "plivo", "twilio"]).default("telnyx"),
+  VOICE_PROVIDER: z.preprocess(trimmedLowercase, z.enum(["telnyx", "plivo", "twilio"])).default("telnyx"),
   NEXTAUTH_URL: emptyToUndefined(z.string().url().optional()),
   NEXTAUTH_SECRET: emptyToUndefined(z.string().min(16).optional()),
   AUTH_TRUST_HOST: emptyToUndefined(z.string().optional()),
