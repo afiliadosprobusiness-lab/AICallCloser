@@ -58,6 +58,16 @@ export default function HomePage() {
   const { t } = useLocale();
   const [session, setSession] = useState<SimpleSession | null>(null);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
+  const [testimonialPage, setTestimonialPage] = useState(0);
+  const [testimonialPageCount, setTestimonialPageCount] = useState(1);
+  const [renderedTestimonialsCount, setRenderedTestimonialsCount] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      return 6;
+    }
+
+    return 9;
+  });
+  const [isTestimonialAutoplayPaused, setIsTestimonialAutoplayPaused] = useState(false);
   const testimonialTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -440,6 +450,11 @@ export default function HomePage() {
     [t],
   );
 
+  const visibleTestimonials = useMemo(
+    () => testimonials.slice(0, renderedTestimonialsCount),
+    [testimonials, renderedTestimonialsCount],
+  );
+
   const faqItems = useMemo<FaqItem[]>(
     () => [
       {
@@ -505,14 +520,115 @@ export default function HomePage() {
 
   const primaryLabel = isAuthenticated ? t("Ir al Dashboard", "Go to Dashboard") : t("Crear Cuenta", "Create Account");
 
+  useEffect(() => {
+    if (renderedTestimonialsCount >= testimonials.length) return;
+    const timer = window.setTimeout(() => {
+      setRenderedTestimonialsCount((current) => Math.min(testimonials.length, current + 3));
+    }, 1400);
+
+    return () => window.clearTimeout(timer);
+  }, [renderedTestimonialsCount, testimonials.length]);
+
+  function updateTestimonialPaging(track: HTMLDivElement) {
+    const pageWidth = Math.max(track.clientWidth, 1);
+    const maxPage = Math.max(0, Math.ceil(track.scrollWidth / pageWidth) - 1);
+    const currentPage = Math.min(maxPage, Math.max(0, Math.round(track.scrollLeft / pageWidth)));
+    setTestimonialPageCount(maxPage + 1);
+    setTestimonialPage(currentPage);
+  }
+
+  useEffect(() => {
+    const track = testimonialTrackRef.current;
+    if (!track) return;
+
+    updateTestimonialPaging(track);
+
+    const onResize = () => updateTestimonialPaging(track);
+    window.addEventListener("resize", onResize);
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(() => updateTestimonialPaging(track));
+      observer.observe(track);
+      return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", onResize);
+      };
+    }
+
+    return () => window.removeEventListener("resize", onResize);
+  }, [visibleTestimonials.length]);
+
   function scrollTrack(track: HTMLDivElement | null, direction: "left" | "right") {
     if (!track) return;
+    setIsTestimonialAutoplayPaused(true);
+
     const offset = Math.max(track.clientWidth * 0.84, 280);
     track.scrollBy({
       left: direction === "left" ? -offset : offset,
       behavior: "smooth",
     });
+
+    if (direction === "right" && renderedTestimonialsCount < testimonials.length) {
+      setRenderedTestimonialsCount((current) => Math.min(testimonials.length, current + 4));
+    }
   }
+
+  function scrollTestimonialsToPage(pageIndex: number) {
+    const track = testimonialTrackRef.current;
+    if (!track) return;
+    setIsTestimonialAutoplayPaused(true);
+
+    const safePage = Math.max(0, Math.min(pageIndex, testimonialPageCount - 1));
+    track.scrollTo({
+      left: safePage * track.clientWidth,
+      behavior: "smooth",
+    });
+  }
+
+  function onTestimonialsScroll(event: React.UIEvent<HTMLDivElement>) {
+    const track = event.currentTarget;
+    updateTestimonialPaging(track);
+
+    if (
+      track.scrollLeft + track.clientWidth >= track.scrollWidth - 220 &&
+      renderedTestimonialsCount < testimonials.length
+    ) {
+      setRenderedTestimonialsCount((current) => Math.min(testimonials.length, current + 4));
+    }
+  }
+
+  useEffect(() => {
+    if (isTestimonialAutoplayPaused || testimonialPageCount <= 1) {
+      return;
+    }
+
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const track = testimonialTrackRef.current;
+      if (!track) return;
+
+      const nextPage = testimonialPage + 1 >= testimonialPageCount ? 0 : testimonialPage + 1;
+      track.scrollTo({
+        left: nextPage * track.clientWidth,
+        behavior: "smooth",
+      });
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, [isTestimonialAutoplayPaused, testimonialPage, testimonialPageCount]);
+
+  useEffect(() => {
+    if (!isTestimonialAutoplayPaused) return;
+
+    const resumeTimer = window.setTimeout(() => {
+      setIsTestimonialAutoplayPaused(false);
+    }, 7000);
+
+    return () => window.clearTimeout(resumeTimer);
+  }, [isTestimonialAutoplayPaused]);
 
   return (
     <div className="landing-root relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
@@ -880,8 +996,16 @@ export default function HomePage() {
           <div
             ref={testimonialTrackRef}
             className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onScroll={onTestimonialsScroll}
+            onMouseEnter={() => setIsTestimonialAutoplayPaused(true)}
+            onMouseLeave={() => setIsTestimonialAutoplayPaused(false)}
+            onTouchStart={() => setIsTestimonialAutoplayPaused(true)}
+            onTouchEnd={() => setIsTestimonialAutoplayPaused(false)}
+            onPointerDown={() => setIsTestimonialAutoplayPaused(true)}
+            onPointerUp={() => setIsTestimonialAutoplayPaused(false)}
+            onPointerCancel={() => setIsTestimonialAutoplayPaused(false)}
           >
-            {testimonials.map((item, index) => (
+            {visibleTestimonials.map((item, index) => (
               <motion.div
                 key={`${item.name}-${item.company}`}
                 variants={fadeUp}
@@ -896,7 +1020,13 @@ export default function HomePage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12 border border-white/15">
-                          <AvatarImage src={item.avatar} alt={`${item.name} profile`} />
+                          <AvatarImage
+                            src={item.avatar}
+                            alt={`${item.name} profile`}
+                            loading={index < 3 ? "eager" : "lazy"}
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                          />
                           <AvatarFallback className="bg-[#1A2446] text-white">
                             {item.name.charAt(0)}
                           </AvatarFallback>
@@ -928,6 +1058,44 @@ export default function HomePage() {
                 </Card>
               </motion.div>
             ))}
+
+            {renderedTestimonialsCount < testimonials.length ? (
+              <div className="w-[86%] shrink-0 snap-start sm:w-[420px] md:w-[460px]">
+                <Card className="h-full border-white/10 bg-white/[0.02]">
+                  <CardContent className="flex h-full min-h-[260px] flex-col items-center justify-center gap-3 p-6 text-center">
+                    <motion.div
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 1.3, repeat: Number.POSITIVE_INFINITY }}
+                      className="h-2.5 w-2.5 rounded-full bg-[#8EA8FF]"
+                    />
+                    <p className="text-sm text-white/70">
+                      {t("Cargando mas testimonios...", "Loading more testimonials...")}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {Array.from({ length: testimonialPageCount }).map((_, index) => {
+              const isActive = index === testimonialPage;
+              return (
+                <button
+                  key={`testimonial-page-${index}`}
+                  type="button"
+                  aria-label={t(
+                    `Ir a testimonios pagina ${index + 1}`,
+                    `Go to testimonials page ${index + 1}`,
+                  )}
+                  className={cn(
+                    "h-2.5 rounded-full border border-white/25 bg-white/20 transition-all duration-200",
+                    isActive ? "w-7 bg-[#8EA8FF] shadow-[0_0_14px_rgba(142,168,255,0.65)]" : "w-2.5 hover:bg-white/35",
+                  )}
+                  onClick={() => scrollTestimonialsToPage(index)}
+                />
+              );
+            })}
           </div>
         </section>
 

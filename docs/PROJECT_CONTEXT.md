@@ -68,4 +68,5 @@
 - Pricing section is followed by a horizontal testimonials rail (Instagram-style swipe/scroll) with real profile photos and 4-5 star ratings.
 - A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
 - Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.
+- Testimonials rail now includes smooth autoplay, page indicators, and progressive lazy rendering/image loading for better mobile performance.
 
