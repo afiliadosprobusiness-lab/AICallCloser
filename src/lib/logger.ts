@@ -9,6 +9,7 @@ export const logger = pino({
       "req.headers.cookie",
       "body.password",
       "body.token",
+      "body.idToken",
       "apiKey",
     ],
     remove: true,

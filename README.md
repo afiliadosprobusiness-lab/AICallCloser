@@ -7,7 +7,7 @@ SaaS multi-tenant **mobile-first** en Next.js para gestionar llamadas inbound co
 - Next.js 16 App Router + TypeScript estricto
 - Tailwind CSS + shadcn/ui
 - Prisma + PostgreSQL
-- NextAuth (Auth.js) con credenciales
+- NextAuth (Auth.js) con credenciales + Google via Firebase Auth
 - Plivo Voice inbound/outbound webhooks
 - OpenAI-compatible LLM + STT + TTS
 - Deploy target: Vercel
@@ -63,6 +63,18 @@ PLIVO_AUTH_TOKEN="..."
 PLIVO_WEBHOOK_BASE_URL="https://tu-dominio-o-ngrok"
 PLIVO_INBOUND_NUMBER="+15550001111"
 HUMAN_HANDOFF_PHONE="+15550001111"
+```
+
+Opcional para login/registro con Google (Firebase):
+
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY="..."
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="..."
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="..."
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="..."
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="..."
+NEXT_PUBLIC_FIREBASE_APP_ID="..."
+FIREBASE_WEB_API_KEY="..." # opcional, usa NEXT_PUBLIC_FIREBASE_API_KEY si no se define
 ```
 
 ## Setup local

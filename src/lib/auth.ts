@@ -2,12 +2,12 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 
 import { isSuperAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
+import { verifyFirebaseIdToken } from "@/lib/firebase/server";
+import { logger } from "@/lib/logger";
 import { ensureUserAccess } from "@/lib/user-access";
 
 const TOKEN_SYNC_INTERVAL_MS = 30_000;
@@ -16,6 +16,57 @@ const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
+
+const firebaseCredentialsSchema = z.object({
+  idToken: z.string().min(20),
+});
+
+const authUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  image: true,
+  emailVerified: true,
+  passwordHash: true,
+  activeWorkspaceId: true,
+  accessStatus: true,
+  accessDisabledUntil: true,
+  memberships: {
+    select: { workspaceId: true },
+    orderBy: { createdAt: "asc" as const },
+    take: 1,
+  },
+};
+
+type AuthUser = NonNullable<Awaited<ReturnType<typeof getUserByEmailForAuth>>>;
+
+async function getUserByEmailForAuth(email: string) {
+  return db.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: authUserSelect,
+  });
+}
+
+function toSessionUser(user: AuthUser) {
+  const fallbackWorkspaceId = user.memberships[0]?.workspaceId ?? null;
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    image: user.image,
+    activeWorkspaceId: user.activeWorkspaceId ?? fallbackWorkspaceId,
+  };
+}
+
+function isUniqueConstraintError(error: unknown): error is { code: string } {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const maybeError = error as { code?: unknown };
+  return typeof maybeError.code === "string" && maybeError.code === "P2002";
+}
 
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({
@@ -31,24 +82,7 @@ const providers: NextAuthOptions["providers"] = [
         return null;
       }
 
-      const user = await db.user.findUnique({
-        where: { email: parsed.data.email.toLowerCase() },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          image: true,
-          passwordHash: true,
-          activeWorkspaceId: true,
-          accessStatus: true,
-          accessDisabledUntil: true,
-          memberships: {
-            select: { workspaceId: true },
-            orderBy: { createdAt: "asc" },
-            take: 1,
-          },
-        },
-      });
+      const user = await getUserByEmailForAuth(parsed.data.email);
 
       if (!user?.passwordHash) {
         return null;
@@ -70,28 +104,90 @@ const providers: NextAuthOptions["providers"] = [
         return null;
       }
 
-      const fallbackWorkspaceId = user.memberships[0]?.workspaceId ?? null;
+      return toSessionUser(user);
+    },
+  }),
+  CredentialsProvider({
+    id: "firebase-google",
+    name: "Google",
+    credentials: {
+      idToken: { label: "Firebase ID Token", type: "text" },
+    },
+    async authorize(credentials) {
+      const parsed = firebaseCredentialsSchema.safeParse(credentials);
+      if (!parsed.success) {
+        return null;
+      }
 
-      return {
+      const firebaseUser = await verifyFirebaseIdToken(parsed.data.idToken);
+      if (!firebaseUser?.email || !firebaseUser.emailVerified) {
+        return null;
+      }
+
+      const email = firebaseUser.email.toLowerCase();
+      let user = await getUserByEmailForAuth(email);
+
+      if (!user) {
+        try {
+          await db.user.create({
+            data: {
+              email,
+              name: firebaseUser.name,
+              image: firebaseUser.image,
+              emailVerified: new Date(),
+            },
+          });
+        } catch (error) {
+          if (!isUniqueConstraintError(error)) {
+            logger.error({ error, email }, "Failed creating Firebase Google user.");
+            return null;
+          }
+        }
+
+        user = await getUserByEmailForAuth(email);
+      } else {
+        const profilePatch: { name?: string; image?: string; emailVerified?: Date } = {};
+
+        if (!user.name && firebaseUser.name) {
+          profilePatch.name = firebaseUser.name;
+        }
+
+        if (!user.image && firebaseUser.image) {
+          profilePatch.image = firebaseUser.image;
+        }
+
+        if (!user.emailVerified) {
+          profilePatch.emailVerified = new Date();
+        }
+
+        if (Object.keys(profilePatch).length > 0) {
+          await db.user.update({
+            where: { id: user.id },
+            data: profilePatch,
+          });
+
+          user = await getUserByEmailForAuth(email);
+        }
+      }
+
+      if (!user) {
+        return null;
+      }
+
+      const accessAllowed = await ensureUserAccess({
         id: user.id,
-        email: user.email,
-        name: user.name,
-        image: user.image,
-        activeWorkspaceId: user.activeWorkspaceId ?? fallbackWorkspaceId,
-      };
+        accessStatus: user.accessStatus,
+        accessDisabledUntil: user.accessDisabledUntil,
+      });
+
+      if (!accessAllowed) {
+        return null;
+      }
+
+      return toSessionUser(user);
     },
   }),
 ];
-
-if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
-  providers.unshift(
-    GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    }),
-  );
-}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),

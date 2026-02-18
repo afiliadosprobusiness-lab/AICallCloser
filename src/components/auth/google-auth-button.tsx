@@ -1,13 +1,33 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { getProviders, signIn } from "next-auth/react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import {
+  getAuth,
+  getRedirectResult,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+} from "firebase/auth";
 
 import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
+import { getFirebaseApp } from "@/lib/firebase/client";
 
-type ProvidersMap = Record<string, { id: string; name: string }>;
-type GoogleState = "loading" | "enabled" | "disabled";
+type GoogleState = "enabled" | "disabled";
+
+type FirebaseAuthError = {
+  code?: string;
+};
+
+const REDIRECT_FALLBACK_CODES = new Set([
+  "auth/popup-blocked",
+  "auth/cancelled-popup-request",
+  "auth/operation-not-supported-in-this-environment",
+]);
+
+const USER_CANCELED_CODES = new Set(["auth/popup-closed-by-user", "auth/cancelled-popup-request"]);
 
 export function GoogleAuthButton({
   callbackUrl,
@@ -16,25 +36,106 @@ export function GoogleAuthButton({
   callbackUrl: string;
   label: string;
 }) {
+  const app = getFirebaseApp();
+  const googleState: GoogleState = app ? "enabled" : "disabled";
+  const router = useRouter();
   const { t } = useLocale();
-  const [googleState, setGoogleState] = useState<GoogleState>("loading");
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    let mounted = true;
+  const completeNextAuthSignIn = useCallback(
+    async (idToken: string) => {
+      const result = await signIn("firebase-google", {
+        idToken,
+        callbackUrl,
+        redirect: false,
+      });
 
-    async function loadProviders() {
-      const providers = (await getProviders()) as ProvidersMap | null;
-      if (!mounted) return;
-      setGoogleState(providers?.google ? "enabled" : "disabled");
+      if (result?.error) {
+        throw new Error("NEXTAUTH_SIGNIN_FAILED");
+      }
+
+      router.push(result?.url ?? callbackUrl);
+      router.refresh();
+    },
+    [callbackUrl, router],
+  );
+
+  useEffect(() => {
+    if (googleState === "disabled") {
+      return;
     }
 
-    void loadProviders();
+    if (!app) {
+      return;
+    }
+
+    const auth = getAuth(app);
+
+    let active = true;
+
+    void getRedirectResult(auth)
+      .then(async (result) => {
+        if (!active || !result?.user) {
+          return;
+        }
+
+        const token = await result.user.getIdToken(true);
+        await completeNextAuthSignIn(token);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+
+        setError(t("No se pudo autenticar con Google.", "Google authentication failed."));
+      });
 
     return () => {
-      mounted = false;
+      active = false;
     };
-  }, []);
+  }, [app, completeNextAuthSignIn, googleState, t]);
+
+  const handleGoogleSignIn = () => {
+    setError(null);
+
+    startTransition(async () => {
+      const app = getFirebaseApp();
+      if (!app) {
+        setError(
+          t(
+            "Configura Firebase para habilitar Google.",
+            "Configure Firebase to enable Google sign-in.",
+          ),
+        );
+        return;
+      }
+
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const token = await result.user.getIdToken(true);
+        await completeNextAuthSignIn(token);
+      } catch (rawError) {
+        const errorData = rawError as FirebaseAuthError;
+        const code = errorData.code ?? "";
+
+        if (USER_CANCELED_CODES.has(code)) {
+          return;
+        }
+
+        if (REDIRECT_FALLBACK_CODES.has(code)) {
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+
+        setError(t("No se pudo autenticar con Google.", "Google authentication failed."));
+      }
+    });
+  };
 
   return (
     <div className="space-y-2">
@@ -43,29 +144,24 @@ export function GoogleAuthButton({
           type="button"
           variant="ghost"
           disabled={isPending || googleState !== "enabled"}
-          onClick={() =>
-            startTransition(async () => {
-              await signIn("google", { callbackUrl });
-            })
-          }
+          onClick={handleGoogleSignIn}
           className="iridescent-surface h-11 w-full rounded-xl border border-white/15 bg-white/[0.04] text-[#ECE8DE] hover:text-[#F7F4EC] disabled:cursor-not-allowed disabled:opacity-70"
         >
           <GoogleGlyph />
-          {googleState === "loading"
-            ? t("Verificando Google...", "Checking Google...")
-            : isPending
-              ? t("Conectando...", "Connecting...")
-              : label}
+          {isPending ? t("Conectando...", "Connecting...") : label}
         </Button>
       </div>
+
       {googleState === "disabled" ? (
         <p className="text-xs text-amber-200/85">
           {t(
-            "Activa Google con GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.",
-            "Enable Google with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+            "Habilita Firebase Google Auth y las variables NEXT_PUBLIC_FIREBASE_*.",
+            "Enable Firebase Google Auth and NEXT_PUBLIC_FIREBASE_* variables.",
           )}
         </p>
       ) : null}
+
+      {error ? <p className="text-xs text-red-300">{error}</p> : null}
     </div>
   );
 }
