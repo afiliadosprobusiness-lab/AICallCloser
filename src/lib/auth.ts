@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { isSuperAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { verifyFirebasePasswordCredential } from "@/lib/firebase/password";
 import { verifyFirebaseIdToken } from "@/lib/firebase/server";
 import { logger } from "@/lib/logger";
 import { ensureUserAccess } from "@/lib/user-access";
@@ -84,7 +85,7 @@ const providers: NextAuthOptions["providers"] = [
 
       const user = await getUserByEmailForAuth(parsed.data.email);
 
-      if (!user?.passwordHash) {
+      if (!user) {
         return null;
       }
 
@@ -98,10 +99,41 @@ const providers: NextAuthOptions["providers"] = [
         return null;
       }
 
-      const passwordOk = await bcrypt.compare(parsed.data.password, user.passwordHash);
+      let passwordOk = false;
+      let shouldSyncPasswordHash = false;
+
+      if (user.passwordHash) {
+        passwordOk = await bcrypt.compare(parsed.data.password, user.passwordHash);
+      }
+
+      if (!passwordOk) {
+        const firebasePasswordResult = await verifyFirebasePasswordCredential({
+          email: parsed.data.email,
+          password: parsed.data.password,
+        });
+
+        if (!firebasePasswordResult.valid) {
+          return null;
+        }
+
+        passwordOk = true;
+        shouldSyncPasswordHash = true;
+      }
 
       if (!passwordOk) {
         return null;
+      }
+
+      if (shouldSyncPasswordHash) {
+        try {
+          const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+          await db.user.update({
+            where: { id: user.id },
+            data: { passwordHash },
+          });
+        } catch (error) {
+          logger.warn({ error, userId: user.id }, "Failed to sync password hash from Firebase credentials.");
+        }
       }
 
       return toSessionUser(user);

@@ -46,6 +46,17 @@ export function ForgotPasswordForm() {
         return;
       }
 
+      if (result.data?.delivered === false) {
+        setError(
+          result.data.message ??
+            t(
+              "No se pudo enviar el enlace de recuperación.",
+              "Could not send the recovery link.",
+            ),
+        );
+        return;
+      }
+
       setMessage(
         result.data?.message ??
           t(

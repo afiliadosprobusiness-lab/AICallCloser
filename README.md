@@ -77,6 +77,15 @@ NEXT_PUBLIC_FIREBASE_APP_ID="..."
 FIREBASE_WEB_API_KEY="..." # opcional, usa NEXT_PUBLIC_FIREBASE_API_KEY si no se define
 ```
 
+Opcional para recuperación de contraseña por email propio (Resend):
+
+```bash
+RESEND_API_KEY="re_..."
+RESEND_FROM_EMAIL="no-reply@tu-dominio.com"
+```
+
+Si Resend no está configurado, la recuperación usa fallback con Firebase Auth (`FIREBASE_WEB_API_KEY`).
+
 ## Setup local
 
 ```bash

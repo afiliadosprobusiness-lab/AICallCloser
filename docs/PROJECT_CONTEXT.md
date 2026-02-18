@@ -50,6 +50,13 @@
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.
 - Telephony number form now shows explicit success/error state after submit.
+- Forgot password now handles `delivered=false` correctly as UI error (instead of success style message).
+
+## Password Recovery
+- If `RESEND_API_KEY` + `RESEND_FROM_EMAIL` are configured, password reset uses internal token flow (`/reset-password?token=...`).
+- If Resend is not configured, system falls back to Firebase Auth password reset email using `FIREBASE_WEB_API_KEY` (or `NEXT_PUBLIC_FIREBASE_API_KEY`).
+- Credentials sign-in includes Firebase verification fallback and re-syncs `passwordHash` in DB after successful Firebase password sign-in.
+- Registration now attempts best-effort provisioning of an email/password user in Firebase to keep recovery path available.
 
 
 ## Localization

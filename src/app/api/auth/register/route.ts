@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { slugifyWorkspaceName } from "@/lib/slug";
 import { getAdminEmails } from "@/lib/admin";
+import { ensureFirebasePasswordUser } from "@/lib/firebase/password";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(80),
@@ -122,6 +123,12 @@ export async function POST(request: Request) {
       });
 
       return { userId: user.id, workspaceId: workspace.id };
+    });
+
+    void ensureFirebasePasswordUser({
+      email,
+      password: parsed.data.password,
+      displayName: parsed.data.name,
     });
 
     return NextResponse.json({ ok: true, data: result }, { status: 201 });
