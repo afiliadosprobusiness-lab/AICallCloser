@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -78,6 +78,8 @@
   html,
   body {
     min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   body {
@@ -229,3 +231,4 @@
     background-position: 200% 50%;
   }
 }
+

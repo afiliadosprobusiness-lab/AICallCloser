@@ -1,67 +1,37 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
 
 import { AppShell } from "@/components/app/app-shell";
 import { isSuperAdminEmail } from "@/lib/admin";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { ensureUserAccess } from "@/lib/user-access";
+import { getAppShellContextOrThrow } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+  let context: Awaited<ReturnType<typeof getAppShellContextOrThrow>>;
 
-  if (!session?.user?.id) {
-    redirect("/sign-in");
+  try {
+    context = await getAppShellContextOrThrow();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === "UNAUTHORIZED" || error.message === "ACCOUNT_DISABLED")
+    ) {
+      redirect("/sign-in");
+    }
+
+    throw error;
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      memberships: {
-        include: {
-          workspace: true,
-        },
-        orderBy: { createdAt: "asc" },
-      },
-    },
-  });
+  const isSuperAdmin = isSuperAdminEmail(context.userEmail);
 
-  if (!user) {
-    redirect("/sign-in");
-  }
-
-  const accessAllowed = await ensureUserAccess({
-    id: user.id,
-    accessStatus: user.accessStatus,
-    accessDisabledUntil: user.accessDisabledUntil,
-  });
-
-  if (!accessAllowed) {
-    redirect("/sign-in");
-  }
-
-  const isSuperAdmin = isSuperAdminEmail(user.email);
-
-  if (user.memberships.length === 0 && !isSuperAdmin) {
+  if (context.memberships.length === 0 && !isSuperAdmin) {
     redirect("/register");
   }
 
-  const activeWorkspaceId =
-    session.user.activeWorkspaceId ??
-    user.activeWorkspaceId ??
-    user.memberships[0]?.workspaceId ??
-    null;
-
   return (
     <AppShell
-      userName={user.name ?? "Operador"}
-      activeWorkspaceId={activeWorkspaceId}
+      userName={context.userName}
+      activeWorkspaceId={context.activeWorkspaceId}
       isSuperAdmin={isSuperAdmin}
-      workspaces={user.memberships.map((member) => ({
-        id: member.workspaceId,
-        name: member.workspace.name,
-        role: member.role,
-      }))}
+      workspaces={context.memberships}
     >
       {children}
     </AppShell>

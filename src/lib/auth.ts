@@ -1,4 +1,4 @@
-﻿import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -9,6 +9,8 @@ import { isSuperAdminEmail } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { ensureUserAccess } from "@/lib/user-access";
+
+const TOKEN_SYNC_INTERVAL_MS = 30_000;
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -31,9 +33,19 @@ const providers: NextAuthOptions["providers"] = [
 
       const user = await db.user.findUnique({
         where: { email: parsed.data.email.toLowerCase() },
-        include: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          passwordHash: true,
+          activeWorkspaceId: true,
+          accessStatus: true,
+          accessDisabledUntil: true,
           memberships: {
+            select: { workspaceId: true },
             orderBy: { createdAt: "asc" },
+            take: 1,
           },
         },
       });
@@ -111,37 +123,67 @@ export const authOptions: NextAuthOptions = {
 
       return ensureUserAccess(dbUser);
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
-        token.activeWorkspaceId = user.activeWorkspaceId;
+        token.activeWorkspaceId = user.activeWorkspaceId ?? null;
         token.email = user.email;
+        token.lastSyncAt = 0;
       }
 
-      if (token.sub) {
-        const dbUser = await db.user.findUnique({
-          where: { id: token.sub },
-          include: {
-            memberships: { orderBy: { createdAt: "asc" } },
+      if (!token.sub) {
+        return token;
+      }
+
+      const now = Date.now();
+      const lastSyncAt = typeof token.lastSyncAt === "number" ? token.lastSyncAt : 0;
+
+      const shouldSync =
+        trigger === "update" ||
+        now - lastSyncAt > TOKEN_SYNC_INTERVAL_MS ||
+        typeof token.isSuperAdmin !== "boolean" ||
+        typeof token.accessDenied !== "boolean" ||
+        typeof token.activeWorkspaceId === "undefined";
+
+      if (!shouldSync) {
+        return token;
+      }
+
+      const dbUser = await db.user.findUnique({
+        where: { id: token.sub },
+        select: {
+          id: true,
+          email: true,
+          activeWorkspaceId: true,
+          accessStatus: true,
+          accessDisabledUntil: true,
+          memberships: {
+            select: {
+              workspaceId: true,
+            },
+            orderBy: { createdAt: "asc" },
+            take: 1,
           },
+        },
+      });
+
+      if (dbUser) {
+        const accessAllowed = await ensureUserAccess({
+          id: dbUser.id,
+          accessStatus: dbUser.accessStatus,
+          accessDisabledUntil: dbUser.accessDisabledUntil,
         });
 
-        if (dbUser) {
-          const accessAllowed = await ensureUserAccess({
-            id: dbUser.id,
-            accessStatus: dbUser.accessStatus,
-            accessDisabledUntil: dbUser.accessDisabledUntil,
-          });
-
-          token.accessDenied = !accessAllowed;
-        } else {
-          token.accessDenied = true;
-        }
-
-        token.activeWorkspaceId =
-          dbUser?.activeWorkspaceId ?? dbUser?.memberships[0]?.workspaceId ?? null;
-        token.isSuperAdmin = isSuperAdminEmail(dbUser?.email);
+        token.accessDenied = !accessAllowed;
+        token.activeWorkspaceId = dbUser.activeWorkspaceId ?? dbUser.memberships[0]?.workspaceId ?? null;
+        token.isSuperAdmin = isSuperAdminEmail(dbUser.email);
+        token.email = dbUser.email;
+      } else {
+        token.accessDenied = true;
+        token.activeWorkspaceId = null;
+        token.isSuperAdmin = false;
       }
 
+      token.lastSyncAt = now;
       return token;
     },
     async session({ session, token }) {

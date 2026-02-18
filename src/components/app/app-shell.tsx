@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   Bot,
@@ -12,9 +13,9 @@ import {
   Users,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -40,7 +41,25 @@ export function AppShell(props: {
   isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  const items = props.isSuperAdmin ? [superAdminItem] : navItems;
+  const router = useRouter();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const items = useMemo(() => (props.isSuperAdmin ? [superAdminItem] : navItems), [props.isSuperAdmin]);
+  const optimisticPath = pendingPath && pendingPath !== pathname ? pendingPath : null;
+
+  useEffect(() => {
+    for (const item of items) {
+      router.prefetch(item.href);
+    }
+  }, [items, router]);
+
+  function markPending(href: string) {
+    setPendingPath(href);
+    router.prefetch(href);
+  }
+
+  function isActive(href: string) {
+    return pathname === href || optimisticPath === href;
+  }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
@@ -58,12 +77,17 @@ export function AppShell(props: {
         <nav className="mt-6 flex flex-1 flex-col gap-2">
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active = isActive(item.href);
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
+                onClick={() => markPending(item.href)}
+                onMouseEnter={() => router.prefetch(item.href)}
+                onFocus={() => router.prefetch(item.href)}
+                onTouchStart={() => router.prefetch(item.href)}
                 className={cn(
                   "premium-hover flex h-11 items-center gap-3 rounded-xl border px-3 text-sm",
                   active
@@ -89,7 +113,7 @@ export function AppShell(props: {
         </div>
       </aside>
 
-      <main className="w-full flex-1">
+      <main className="w-full min-w-0 flex-1">
         <div className="premium-glass mb-4 flex items-center gap-3 rounded-2xl p-3 md:hidden">
           <div className="flex-1">
             {!props.isSuperAdmin ? (
@@ -105,17 +129,20 @@ export function AppShell(props: {
       </main>
 
       <nav className="premium-glass fixed inset-x-3 bottom-3 z-40 rounded-2xl p-2 md:hidden">
-        <ul
-          className={cn("grid gap-2", items.length === 1 ? "grid-cols-1" : "grid-cols-5")}
-        >
+        <ul className={cn("grid gap-2", items.length === 1 ? "grid-cols-1" : "grid-cols-5")}>
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active = isActive(item.href);
 
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  prefetch
+                  onClick={() => markPending(item.href)}
+                  onMouseEnter={() => router.prefetch(item.href)}
+                  onFocus={() => router.prefetch(item.href)}
+                  onTouchStart={() => router.prefetch(item.href)}
                   className={cn(
                     "flex min-h-11 flex-col items-center justify-center rounded-xl border text-[11px] leading-tight",
                     active

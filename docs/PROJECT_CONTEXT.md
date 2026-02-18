@@ -27,3 +27,10 @@
 - UI navigation filtering in `src/components/app/app-shell.tsx`.
 - Route-level access enforcement in `src/proxy.ts`.
 - Post login routing in `src/app/post-auth/page.tsx`.
+
+## Performance and UX
+- Navigation links are proactively prefetched in src/components/app/app-shell.tsx.
+- Route transitions show instant optimistic active state in sidebar and bottom nav.
+- App routes use src/app/(app)/loading.tsx for responsive skeleton loading feedback.
+- Auth JWT sync with DB is throttled (30s window) to reduce repeated query cost while navigating.
+

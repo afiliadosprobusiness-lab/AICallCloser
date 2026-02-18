@@ -1,4 +1,4 @@
-﻿import { type DefaultSession } from "next-auth";
+import { type DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
@@ -20,5 +20,6 @@ declare module "next-auth/jwt" {
     activeWorkspaceId?: string | null;
     isSuperAdmin?: boolean;
     accessDenied?: boolean;
+    lastSyncAt?: number;
   }
 }
