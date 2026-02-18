@@ -17,7 +17,10 @@ export default async function DashboardPage() {
   const locale = await getRequestLocale();
   const t = (esText: string, enText: string) => translate(locale, esText, enText);
   const { workspaceId } = await getWorkspaceContextOrThrow();
-  const metrics = await getDashboardMetrics(workspaceId);
+  const metrics = await getDashboardMetrics(workspaceId).catch((error) => {
+    console.error("[dashboard] failed to load metrics", error);
+    return getEmptyDashboardMetrics();
+  });
   const voiceProvider = getVoiceProvider();
   const providerLabel = voiceProvider === "twilio" ? "Twilio" : voiceProvider === "plivo" ? "Plivo" : "Telnyx";
   const outboundEndpoint = `/api/${voiceProvider}/voice/outbound`;
@@ -220,6 +223,39 @@ export default async function DashboardPage() {
       </PremiumCard>
     </div>
   );
+}
+
+function getEmptyDashboardMetrics() {
+  return {
+    callsTotal: 0,
+    callsCompleted: 0,
+    callsNoAnswer: 0,
+    qualifiedLeads: 0,
+    scheduledLeads: 0,
+    newLeads: 0,
+    unqualifiedLeads: 0,
+    wonLeads: 0,
+    lostLeads: 0,
+    handoffs: 0,
+    closeRate: 0,
+    winRate: 0,
+    noAnswerRate: 0,
+    avgDurationSeconds: 0,
+    activeNumbers: 0,
+    readinessScore: 0,
+    readinessChecks: [false, false, false, false, false],
+    recentCalls: [] as Array<{
+      id: string;
+      fromNumber: string;
+      startedAt: Date;
+      outcome: "unknown";
+      lead: { phone: string } | null;
+    }>,
+    dailyMetrics: [] as Array<{
+      date: Date;
+      inboundCalls: number;
+    }>,
+  };
 }
 
 function FunnelTile(props: { label: string; value: number }) {

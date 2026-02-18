@@ -64,8 +64,16 @@ export async function getDashboardMetrics(workspaceId: string) {
     db.handoff.count({ where: { workspaceId } }),
     db.call.findMany({
       where: { workspaceId },
-      include: {
-        lead: true,
+      select: {
+        id: true,
+        fromNumber: true,
+        startedAt: true,
+        outcome: true,
+        lead: {
+          select: {
+            phone: true,
+          },
+        },
       },
       orderBy: { startedAt: "desc" },
       take: 8,
