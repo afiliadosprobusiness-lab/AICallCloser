@@ -1,4 +1,4 @@
-﻿CREATE TABLE "PasswordResetToken" (
+CREATE TABLE "PasswordResetToken" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
   "tokenHash" TEXT NOT NULL,
