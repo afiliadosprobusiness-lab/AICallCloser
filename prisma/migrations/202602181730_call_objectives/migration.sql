@@ -1,4 +1,4 @@
-﻿-- Add new CallOutcome values
+-- Add new CallOutcome values
 ALTER TYPE "CallOutcome" ADD VALUE IF NOT EXISTS 'sold';
 ALTER TYPE "CallOutcome" ADD VALUE IF NOT EXISTS 'booked_meeting';
 ALTER TYPE "CallOutcome" ADD VALUE IF NOT EXISTS 'booked_google_meet';
