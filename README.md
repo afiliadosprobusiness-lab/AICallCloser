@@ -144,7 +144,7 @@ Salida programática (botón Test Call):
    - `TWILIO_ACCOUNT_SID`
    - `TWILIO_AUTH_TOKEN`
    - `TWILIO_NUMBER` (o `TWILIO_INBOUND_NUMBER`)
-   - `BASE_URL` (mismo dominio público del proyecto)
+   - `BASE_URL` (recomendado; si falta, el backend usa el dominio del request actual)
 2. En Twilio Phone Number:
    - **A call comes in**: `POST https://TU_URL/api/twilio/voice/inbound`
    - **Call status changes**: `POST https://TU_URL/api/twilio/voice/status`

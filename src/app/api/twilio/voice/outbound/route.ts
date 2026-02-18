@@ -3,6 +3,13 @@ import { NextResponse } from "next/server";
 import { getWorkspaceContextOrThrow } from "@/lib/session";
 import { createTwilioOutboundCall, handleTwilioOutboundTwiml } from "@/modules/twilio/outbound";
 
+function resolveRequestBaseUrl(request: Request) {
+  const url = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+  const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
+  return `${proto}://${host}`;
+}
+
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const isWebhookRequest =
@@ -19,6 +26,7 @@ export async function POST(request: Request) {
     const result = await createTwilioOutboundCall({
       workspaceId,
       payload: body,
+      requestBaseUrl: resolveRequestBaseUrl(request),
     });
 
     return NextResponse.json(

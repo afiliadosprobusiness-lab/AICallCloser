@@ -90,6 +90,7 @@ function mapTwilioCreateError(error: unknown) {
 type OutboundCreateInput = {
   workspaceId: string;
   payload: unknown;
+  requestBaseUrl?: string;
 };
 
 export async function createTwilioOutboundCall(input: OutboundCreateInput) {
@@ -148,7 +149,7 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
     };
   }
 
-  const baseUrl = getBaseUrl();
+  const baseUrl = input.requestBaseUrl ?? getBaseUrl();
   const twimlUrl = `${baseUrl}/api/twilio/voice/outbound?agentId=${encodeURIComponent(agentConfig.id)}${parsed.data.answerText ? `&message=${encodeURIComponent(parsed.data.answerText)}` : ""}`;
   const statusCallbackUrl = `${baseUrl}/api/twilio/voice/status`;
 
