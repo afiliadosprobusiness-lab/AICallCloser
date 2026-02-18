@@ -210,6 +210,13 @@
       0 0 28px rgba(110, 118, 255, 0.26);
   }
 
+  /* Prevent top-border clipping on testimonial cards inside horizontal tracks. */
+  @media (hover: hover) {
+    .testimonial-card.iridescent-surface:hover {
+      transform: translateY(0);
+    }
+  }
+
   .landing-root [data-slot="button"] {
     position: relative;
     overflow: hidden;

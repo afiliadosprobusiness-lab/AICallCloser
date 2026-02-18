@@ -995,7 +995,7 @@ export default function HomePage() {
 
           <div
             ref={testimonialTrackRef}
-            className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             onScroll={onTestimonialsScroll}
             onMouseEnter={() => setIsTestimonialAutoplayPaused(true)}
             onMouseLeave={() => setIsTestimonialAutoplayPaused(false)}
@@ -1015,7 +1015,7 @@ export default function HomePage() {
                 transition={{ duration: 0.45, delay: index * 0.05 }}
                 className="w-[86%] shrink-0 snap-start sm:w-[420px] md:w-[460px]"
               >
-                <Card className="iridescent-border iridescent-surface h-full border-white/12 bg-white/[0.03]">
+                <Card className="testimonial-card iridescent-border iridescent-surface h-full border-white/12 bg-white/[0.03]">
                   <CardContent className="p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
