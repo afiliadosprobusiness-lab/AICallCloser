@@ -21,6 +21,8 @@ type FirebaseAuthError = {
   code?: string;
 };
 
+const DOMAIN_SETUP_CODES = new Set(["auth/unauthorized-domain", "auth/auth-domain-config-required"]);
+
 const REDIRECT_FALLBACK_CODES = new Set([
   "auth/popup-blocked",
   "auth/cancelled-popup-request",
@@ -28,6 +30,25 @@ const REDIRECT_FALLBACK_CODES = new Set([
 ]);
 
 const USER_CANCELED_CODES = new Set(["auth/popup-closed-by-user", "auth/cancelled-popup-request"]);
+
+function getGoogleAuthErrorMessage(code: string, t: (es: string, en: string) => string) {
+  if (DOMAIN_SETUP_CODES.has(code)) {
+    if (typeof window !== "undefined") {
+      const host = window.location.host;
+      return t(
+        `Google no esta habilitado para este dominio: ${host}. Agregalo en Firebase Console > Authentication > Settings > Authorized domains.`,
+        `Google sign-in is not enabled for this domain: ${host}. Add it in Firebase Console > Authentication > Settings > Authorized domains.`,
+      );
+    }
+
+    return t(
+      "Google no esta habilitado para este dominio. Agregalo en Firebase Console > Authentication > Settings > Authorized domains.",
+      "Google sign-in is not enabled for this domain. Add it in Firebase Console > Authentication > Settings > Authorized domains.",
+    );
+  }
+
+  return t("No se pudo autenticar con Google.", "Google authentication failed.");
+}
 
 export function GoogleAuthButton({
   callbackUrl,
@@ -83,12 +104,13 @@ export function GoogleAuthButton({
         const token = await result.user.getIdToken(true);
         await completeNextAuthSignIn(token);
       })
-      .catch(() => {
+      .catch((rawError) => {
         if (!active) {
           return;
         }
 
-        setError(t("No se pudo autenticar con Google.", "Google authentication failed."));
+        const errorData = rawError as FirebaseAuthError;
+        setError(getGoogleAuthErrorMessage(errorData.code ?? "", t));
       });
 
     return () => {
@@ -132,7 +154,7 @@ export function GoogleAuthButton({
           return;
         }
 
-        setError(t("No se pudo autenticar con Google.", "Google authentication failed."));
+        setError(getGoogleAuthErrorMessage(code, t));
       }
     });
   };
