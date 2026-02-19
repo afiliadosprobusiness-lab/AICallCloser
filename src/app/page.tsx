@@ -180,7 +180,10 @@ export default function HomePage() {
     const updatePricingProgress = () => {
       rafId = 0;
       const rect = pricingSection.getBoundingClientRect();
-      const nextPassed = rect.bottom < 120;
+      const viewportMid = Math.round(window.innerHeight * 0.46);
+      const nextInView = rect.top <= viewportMid && rect.bottom >= 120;
+      const nextPassed = rect.bottom <= viewportMid;
+      setIsPricingInView((current) => (current === nextInView ? current : nextInView));
       setHasPassedPricing((current) => (current === nextPassed ? current : nextPassed));
     };
 
@@ -189,25 +192,12 @@ export default function HomePage() {
       rafId = window.requestAnimationFrame(updatePricingProgress);
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const nextInView = entry.isIntersecting;
-        setIsPricingInView((current) => (current === nextInView ? current : nextInView));
-      },
-      {
-        threshold: 0.2,
-        rootMargin: "-15% 0px -45% 0px",
-      },
-    );
-
-    observer.observe(pricingSection);
     updatePricingProgress();
     window.addEventListener("scroll", onScrollOrResize, { passive: true });
     window.addEventListener("resize", onScrollOrResize);
 
     return () => {
       if (rafId) window.cancelAnimationFrame(rafId);
-      observer.disconnect();
       window.removeEventListener("scroll", onScrollOrResize);
       window.removeEventListener("resize", onScrollOrResize);
     };
@@ -634,10 +624,10 @@ export default function HomePage() {
     menuCtaMode === "dashboard"
       ? t("Dashboard", "Dashboard")
       : menuCtaMode === "free_trial"
-        ? t("Prueba gratis", "Free trial")
+        ? t("Iniciar prueba gratuita", "Start free trial")
         : menuCtaMode === "live_demo"
-          ? t("Demo en vivo", "Live demo")
-          : t("Crear", "Create");
+          ? t("Prueba la demostracion en vivo", "Try the live demo")
+          : t("Crear Cuenta", "Create Account");
   const isLiveDemoPrimaryCta = menuCtaMode === "live_demo";
 
   useEffect(() => {
