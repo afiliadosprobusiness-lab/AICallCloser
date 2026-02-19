@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -880,86 +881,85 @@ export default function HomePage() {
     setHasCapturedLeadForDemo(true);
     scheduleLeadChatAutoClose();
   }
+  const floatingHeaderRoot =
+    typeof document === "undefined" ? null : document.getElementById("floating-header-root");
+
+  const headerNode = (
+    <header className="fixed inset-x-0 top-0 z-[80] px-3 pt-3 sm:px-5 md:px-0 md:pt-0">
+      <nav
+        className={cn(
+          "mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:flex-nowrap md:justify-between md:px-6 md:transition-[height,background-color,border-color,box-shadow,backdrop-filter] md:duration-200 md:ease-out",
+          isDesktopNavScrolled
+            ? "md:h-[60px] md:border-white/10 md:bg-[#0E1425]/82 md:shadow-[0_14px_40px_rgba(4,8,24,0.45)] md:backdrop-blur-xl"
+            : "md:h-[72px] md:border-white/12 md:bg-[#0B1020]/35 md:shadow-[0_6px_20px_rgba(4,8,24,0.25)] md:backdrop-blur-md",
+        )}
+      >
+        <Link href="/" className="inline-flex min-w-0 items-center gap-2.5">
+          <BrandMark className="h-8 w-8" />
+          <span className="text-sm font-semibold tracking-wide text-white/95 md:text-base">AI Call Closer</span>
+        </Link>
+        <div className="ml-auto flex items-center gap-2 md:hidden">
+          <ThemeToggle compact />
+          <LanguageToggle compact />
+        </div>
+
+        <div className="hidden items-center gap-8 md:flex">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className="text-sm text-white/85 transition-colors hover:text-white">
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex w-full items-center gap-2 md:w-auto md:justify-end">
+          <div className="hidden items-center gap-2 md:flex">
+            <ThemeToggle compact />
+            <LanguageToggle compact />
+          </div>
+          <Button
+            asChild
+            variant="ghost"
+            className="h-9 w-full min-w-0 flex-1 border border-white/10 bg-white/[0.02] px-3 text-xs text-white/80 hover:bg-white/[0.07] hover:text-white sm:w-auto sm:flex-none sm:text-sm"
+          >
+            <Link href="/sign-in" className="truncate text-center">
+              <span className="sm:hidden">{t("Entrar", "Sign in")}</span>
+              <span className="hidden sm:inline">{t("Iniciar sesion", "Sign in")}</span>
+            </Link>
+          </Button>
+          <Button
+            asChild={!isLiveDemoPrimaryCta}
+            className={cn(
+              "h-9 w-full min-w-0 flex-1 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white transition-transform hover:scale-[1.02] sm:w-auto sm:flex-none sm:text-sm md:duration-200 md:ease-out",
+              isDesktopNavScrolled
+                ? "md:from-[#3D7BFF] md:to-[#8D4BFF] md:shadow-[0_0_34px_rgba(86,92,255,0.42)]"
+                : "md:from-[#4E63A8] md:to-[#6F5AA8] md:shadow-[0_0_18px_rgba(88,98,176,0.32)]",
+            )}
+            onClick={isLiveDemoPrimaryCta ? () => scrollToLiveDemo(true) : undefined}
+          >
+            {isLiveDemoPrimaryCta ? (
+              <span className="truncate text-center">
+                <span className="sm:hidden">{primaryLabelCompact}</span>
+                <span className="hidden sm:inline">{primaryLabel}</span>
+              </span>
+            ) : (
+              <Link href={primaryHref} className="truncate text-center">
+                <span className="sm:hidden">{primaryLabelCompact}</span>
+                <span className="hidden sm:inline">{primaryLabel}</span>
+              </Link>
+            )}
+          </Button>
+        </div>
+      </nav>
+    </header>
+  );
 
   return (
     <div className="landing-root relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
       <div className="pointer-events-none absolute inset-0 [background:radial-gradient(40rem_40rem_at_15%_15%,rgba(69,94,255,0.18),transparent),radial-gradient(36rem_36rem_at_85%_10%,rgba(144,76,255,0.18),transparent),linear-gradient(to_bottom,#0B0F19,#0B0F19)]" />
       <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:44px_44px]" />
+      {floatingHeaderRoot ? createPortal(headerNode, floatingHeaderRoot) : headerNode}
 
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-24 md:px-8 md:pt-6">
-        <header className="sticky top-0 z-50 px-3 pt-3 sm:px-5 md:px-0 md:pt-0">
-          <nav
-            className={cn(
-              "mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:flex-nowrap md:justify-between md:px-6 md:transition-[height,background-color,border-color,box-shadow,backdrop-filter] md:duration-200 md:ease-out",
-              isDesktopNavScrolled
-                ? "md:h-[60px] md:border-white/10 md:bg-[#0E1425]/82 md:shadow-[0_14px_40px_rgba(4,8,24,0.45)] md:backdrop-blur-xl"
-                : "md:h-[72px] md:border-white/12 md:bg-[#0B1020]/35 md:shadow-[0_6px_20px_rgba(4,8,24,0.25)] md:backdrop-blur-md",
-            )}
-          >
-            <Link href="/" className="inline-flex min-w-0 items-center gap-2.5">
-              <BrandMark className="h-8 w-8" />
-              <span className="text-sm font-semibold tracking-wide text-white/95 md:text-base">
-                AI Call Closer
-              </span>
-            </Link>
-            <div className="ml-auto flex items-center gap-2 md:hidden">
-              <ThemeToggle compact />
-              <LanguageToggle compact />
-            </div>
-
-            <div className="hidden items-center gap-8 md:flex">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm text-white/85 transition-colors hover:text-white"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="flex w-full items-center gap-2 md:w-auto md:justify-end">
-              <div className="hidden items-center gap-2 md:flex">
-                <ThemeToggle compact />
-                <LanguageToggle compact />
-              </div>
-              <Button
-                asChild
-                variant="ghost"
-                className="h-9 w-full min-w-0 flex-1 border border-white/10 bg-white/[0.02] px-3 text-xs text-white/80 hover:bg-white/[0.07] hover:text-white sm:w-auto sm:flex-none sm:text-sm"
-              >
-                <Link href="/sign-in" className="truncate text-center">
-                  <span className="sm:hidden">{t("Entrar", "Sign in")}</span>
-                  <span className="hidden sm:inline">{t("Iniciar sesion", "Sign in")}</span>
-                </Link>
-              </Button>
-              <Button
-                asChild={!isLiveDemoPrimaryCta}
-                className={cn(
-                  "h-9 w-full min-w-0 flex-1 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white transition-transform hover:scale-[1.02] sm:w-auto sm:flex-none sm:text-sm md:duration-200 md:ease-out",
-                  isDesktopNavScrolled
-                    ? "md:from-[#3D7BFF] md:to-[#8D4BFF] md:shadow-[0_0_34px_rgba(86,92,255,0.42)]"
-                    : "md:from-[#4E63A8] md:to-[#6F5AA8] md:shadow-[0_0_18px_rgba(88,98,176,0.32)]",
-                )}
-                onClick={isLiveDemoPrimaryCta ? () => scrollToLiveDemo(true) : undefined}
-              >
-                {isLiveDemoPrimaryCta ? (
-                  <span className="truncate text-center">
-                    <span className="sm:hidden">{primaryLabelCompact}</span>
-                    <span className="hidden sm:inline">{primaryLabel}</span>
-                  </span>
-                ) : (
-                  <Link href={primaryHref} className="truncate text-center">
-                    <span className="sm:hidden">{primaryLabelCompact}</span>
-                    <span className="hidden sm:inline">{primaryLabel}</span>
-                  </Link>
-                )}
-              </Button>
-            </div>
-          </nav>
-        </header>
-
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-24 md:px-8 md:pt-28">
         <section id="producto" className="scroll-mt-28 px-1 pb-18 pt-16 md:pb-24 md:pt-24">
           <motion.div
             initial="hidden"

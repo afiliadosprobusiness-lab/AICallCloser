@@ -76,6 +76,7 @@ export default async function RootLayout({
         <ThemeProvider theme={theme}>
           <LocaleProvider locale={locale}>
             <FirebaseProvider>
+              <div id="floating-header-root" />
               <div id="app-theme-root">{children}</div>
             </FirebaseProvider>
           </LocaleProvider>
