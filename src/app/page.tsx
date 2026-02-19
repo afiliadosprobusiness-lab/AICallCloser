@@ -1546,7 +1546,7 @@ export default function HomePage() {
       </div>
       <Script
         id="leads-widget-script"
-        src="https://leads-widget.vercel.app/api/w/0oflzwpj2s.js"
+        src="https://leads-widget.vercel.app/api/w/q7ccwgzm2g.js"
         strategy="afterInteractive"
       />
     </div>
