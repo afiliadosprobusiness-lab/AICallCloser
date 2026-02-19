@@ -290,10 +290,10 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
   try {
     const url = new URL(request.url);
     const workspaceId = url.searchParams.get("workspaceId");
-    const callId = url.searchParams.get("callId");
+    const callIdParam = url.searchParams.get("callId");
     const noInput = url.searchParams.get("noinput") === "1";
 
-    if (!workspaceId || !callId) {
+    if (!workspaceId) {
       return new Response("Missing query params", { status: 400 });
     }
 
@@ -301,6 +301,21 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     if (shouldValidateSignature(provider) && !validateSignature(provider, request, params)) {
       return new Response("Invalid signature", { status: 403 });
+    }
+
+    const providerCallId = getCallIdentifier(params);
+    const resolvedCallId =
+      callIdParam ??
+      (providerCallId
+        ? (
+            await getCallByProviderSid(providerCallId)
+          )?.id ?? null
+        : null);
+
+    if (!resolvedCallId) {
+      return xmlResponse(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Speak>Active call not found.</Speak><Hangup/></Response>",
+      );
     }
 
     const workspace = await getWorkspaceSummary(workspaceId);
@@ -311,7 +326,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       );
     }
 
-    const call = await getCallContext({ workspaceId, callId });
+    const call = await getCallContext({ workspaceId, callId: resolvedCallId });
 
     if (!call) {
       return xmlResponse(
@@ -328,7 +343,6 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
     const compiledPromptFromCall = getCallScopedCompiledPrompt(call.transcripts);
     const effectiveSystemPrompt = compiledPromptFromCall ?? workspace.agentConfig.systemPrompt;
 
-    const providerCallId = getCallIdentifier(params);
     let leadText = "";
     const speechText = getSpeechText(params);
 
@@ -351,7 +365,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     await appendTranscriptTurn({
       workspaceId,
-      callId,
+      callId: resolvedCallId,
       speaker: "user",
       text: leadText,
       metadata: {
@@ -405,7 +419,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       ? await executeObjectiveSuccess({
           objective: resolution.objective,
           workspaceId,
-          callId,
+          callId: resolvedCallId,
           leadId: call.leadId ?? null,
           leadText,
           decision: finalDecision,
@@ -434,7 +448,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     await appendTranscriptTurn({
       workspaceId,
-      callId,
+      callId: resolvedCallId,
       speaker: "assistant",
       text: finalDecision.assistantReply,
       metadata: {
@@ -449,7 +463,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
 
     await applyDecisionToCall({
       workspaceId,
-      callId,
+      callId: resolvedCallId,
       decision: finalDecision,
       handoffPhone: workspace.agentConfig.handoffPhone,
       outcomeOverride: objectiveResult.outcomeCode ?? resolution.outcome,
@@ -526,7 +540,7 @@ export async function handleProcessVoiceWebhook(provider: VoiceProvider, request
       model: voiceModel,
     });
 
-    const actionUrl = `${env.APP_URL}${processPath(provider)}?workspaceId=${workspaceId}&callId=${callId}`;
+    const actionUrl = `${env.APP_URL}${processPath(provider)}?workspaceId=${workspaceId}&callId=${resolvedCallId}`;
 
     const xml = buildPromptAndRecordVoiceXml(provider, {
       promptAudioUrl: continueAudioUrl,

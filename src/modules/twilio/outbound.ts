@@ -166,15 +166,59 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
   }
 
   const baseUrl = input.requestBaseUrl ?? getBaseUrl();
-  const twimlUrl = `${baseUrl}/api/twilio/voice/outbound/answer?agentId=${encodeURIComponent(agentConfig.id)}`;
   const statusCallbackUrl = `${baseUrl}/api/twilio/voice/status`;
+  const runtime = await resolveRuntimeConfig({ agentId: agentConfig.id, workspaceId: null });
+
+  if (!runtime) {
+    return {
+      ok: false as const,
+      status: 400,
+      error: {
+        message: "Agent runtime configuration is not available.",
+      },
+    };
+  }
+
+  const resolvedOpening =
+    runtime.agentConfig.greetingMessage?.trim() ||
+    runtime.playbook.opening ||
+    buildDefaultOpening({
+      language: runtime.preferences.language,
+      agentName: runtime.agentConfig.agentName,
+      businessName: runtime.agentConfig.workspace.name ?? "your team",
+    });
+
+  const coldCallPrompt = buildColdCallSystemPrompt({
+    systemPrompt: runtime.agentConfig.systemPrompt,
+    playbook: runtime.playbook,
+    checklist: asStringArray(runtime.agentConfig.qualificationChecklist),
+    disallowedClaims: asStringArray(runtime.agentConfig.disallowedClaims),
+  });
+
+  const processUrl = `${baseUrl}/api/twilio/voice/process?workspaceId=${runtime.agentConfig.workspaceId}`;
+  const promptAudioUrl = env.OPENAI_API_KEY
+    ? `${baseUrl}/api/voice/tts?token=${encodeURIComponent(
+        signTtsPayload({
+          text: resolvedOpening,
+          workspaceId: runtime.agentConfig.workspaceId,
+          voice: runtime.agentConfig.ttsVoice ?? "alloy",
+          model: runtime.agentConfig.voiceModel ?? env.OPENAI_TTS_MODEL,
+        }),
+      )}`
+    : undefined;
+
+  const outboundTwiml = buildOutboundGatherTwiml({
+    opening: resolvedOpening,
+    actionUrl: processUrl,
+    promptAudioUrl,
+    language: runtime.preferences.language,
+  });
 
   try {
     const createdCall = await twilioClient.calls.create({
       to: parsed.data.to,
       from: fromNumber,
-      url: twimlUrl,
-      method: "POST",
+      twiml: outboundTwiml,
       statusCallback: statusCallbackUrl,
       statusCallbackMethod: "POST",
       statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
@@ -199,9 +243,17 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
           callSid: createdCall.sid,
           from: fromNumber,
           to: parsed.data.to,
-          twimlUrl,
+          twimlSource: "inline",
           statusCallback: statusCallbackUrl,
           agentId: agentConfig.id,
+          opening: resolvedOpening,
+          compiledSystemPrompt: coldCallPrompt,
+          objective: runtime.preferences.primaryObjective,
+          secondaryObjectives: runtime.preferences.secondaryObjectives,
+          leadFieldsRequired: runtime.preferences.leadFieldsRequired,
+          qualificationChecklist: asStringArray(runtime.agentConfig.qualificationChecklist),
+          disallowedClaims: asStringArray(runtime.agentConfig.disallowedClaims),
+          callPlaybook: runtime.playbook,
         },
       });
     }
