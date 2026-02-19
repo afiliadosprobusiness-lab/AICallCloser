@@ -75,6 +75,7 @@ export default function HomePage() {
   const [liveDemoPrefill, setLiveDemoPrefill] = useState<LiveDemoPrefillContext | null>(null);
   const [leadChatPrefill, setLeadChatPrefill] = useState<LeadChatPrefillContext | null>(null);
   const [liveDemoRuntime, setLiveDemoRuntime] = useState<LiveDemoRuntimeContext | null>(null);
+  const [isDesktopNavScrolled, setIsDesktopNavScrolled] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
   const [testimonialPageCount, setTestimonialPageCount] = useState(1);
@@ -120,6 +121,51 @@ export default function HomePage() {
     return () => {
       if (leadChatAutoCloseTimerRef.current != null) {
         window.clearTimeout(leadChatAutoCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    let ticking = false;
+
+    const updateDesktopNav = () => {
+      ticking = false;
+
+      if (!desktopQuery.matches) {
+        setIsDesktopNavScrolled(false);
+        return;
+      }
+
+      const nextScrolled = window.scrollY > 80;
+      setIsDesktopNavScrolled((current) => (current === nextScrolled ? current : nextScrolled));
+    };
+
+    const onScroll = () => {
+      if (!desktopQuery.matches || ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(updateDesktopNav);
+    };
+
+    const onViewportChange = () => updateDesktopNav();
+
+    updateDesktopNav();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    if (typeof desktopQuery.addEventListener === "function") {
+      desktopQuery.addEventListener("change", onViewportChange);
+    } else {
+      desktopQuery.addListener(onViewportChange);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (typeof desktopQuery.removeEventListener === "function") {
+        desktopQuery.removeEventListener("change", onViewportChange);
+      } else {
+        desktopQuery.removeListener(onViewportChange);
       }
     };
   }, []);
@@ -777,8 +823,15 @@ export default function HomePage() {
       <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:44px_44px]" />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-24 md:px-8 md:pt-6">
-        <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 md:sticky md:top-4 md:px-0 md:pt-0">
-          <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:flex-nowrap md:justify-between md:px-6 md:py-3">
+        <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 md:sticky md:top-0 md:flex md:h-[72px] md:items-center md:px-0 md:pt-0">
+          <nav
+            className={cn(
+              "mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:flex-nowrap md:justify-between md:px-6 md:transition-[height,background-color,border-color,box-shadow,backdrop-filter] md:duration-200 md:ease-out",
+              isDesktopNavScrolled
+                ? "md:h-[60px] md:border-white/10 md:bg-[#0E1425]/82 md:shadow-[0_14px_40px_rgba(4,8,24,0.45)] md:backdrop-blur-xl"
+                : "md:h-[72px] md:border-white/0 md:bg-transparent md:shadow-none md:backdrop-blur-0",
+            )}
+          >
             <Link href="/" className="inline-flex min-w-0 items-center gap-2.5">
               <BrandMark className="h-8 w-8" />
               <span className="text-sm font-semibold tracking-wide text-white/95 md:text-base">
@@ -817,7 +870,12 @@ export default function HomePage() {
               </Button>
               <Button
                 asChild
-                className="h-9 w-full min-w-0 flex-1 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white shadow-[0_0_32px_rgba(86,92,255,0.45)] transition-transform hover:scale-[1.02] sm:w-auto sm:flex-none sm:text-sm"
+                className={cn(
+                  "h-9 w-full min-w-0 flex-1 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white transition-transform hover:scale-[1.02] sm:w-auto sm:flex-none sm:text-sm md:duration-200 md:ease-out",
+                  isDesktopNavScrolled
+                    ? "md:from-[#3D7BFF] md:to-[#8D4BFF] md:shadow-[0_0_34px_rgba(86,92,255,0.42)]"
+                    : "md:from-[#4E63A8] md:to-[#6F5AA8] md:shadow-[0_0_18px_rgba(88,98,176,0.32)]",
+                )}
               >
                 <Link href={primaryHref} className="truncate text-center">
                   <span className="sm:hidden">{primaryLabelCompact}</span>
