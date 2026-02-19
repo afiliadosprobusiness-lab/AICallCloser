@@ -12,6 +12,36 @@ SaaS multi-tenant **mobile-first** en Next.js para gestionar llamadas inbound co
 - OpenAI-compatible LLM + STT + TTS
 - Deploy target: Vercel
 
+## Landing Live Demo (EN/ES)
+
+La landing incluye un embudo principal frontend-only:
+
+- `Hero` -> CTA scroll a `#live-chat-demo` y abre modal de Lead Chat.
+- `LiveChatToCallDemoSection` (chat -> consentimiento -> llamada -> outcome).
+- `LeadChatPublicWidget` (funnel de 3 pasos con validacion E.164 y consentimiento requerido).
+
+Archivos clave:
+
+- `src/components/landing/live-chat-to-call-demo-section.tsx`
+- `src/components/landing/lead-chat-public-widget.tsx`
+- `src/app/lead-chat-public/page.tsx`
+- `src/app/page.tsx`
+
+### Cambiar textos EN/ES
+
+Los textos estan centralizados en los objetos `COPY` dentro de:
+
+- `src/components/landing/live-chat-to-call-demo-section.tsx`
+- `src/components/landing/lead-chat-public-widget.tsx`
+
+### Conectar luego con Twilio/backend
+
+Stubs listos en `src/app/page.tsx`:
+
+- `onSubmitDemoLead(payload)` -> conectar a endpoint de captura de lead demo
+- `onStartDemoCall(payload)` -> conectar a trigger de llamada Twilio
+- `onSubmitLeadChatWidget(payload)` -> conectar a handoff publico
+
 ## Arquitectura
 
 - Multi-tenant real por `workspaceId` en datos de dominio (`Lead`, `Call`, `TranscriptTurn`, `AgentConfig`, etc.).

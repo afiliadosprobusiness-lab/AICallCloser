@@ -94,12 +94,24 @@
 - Root layout reads locale server-side and sets <html lang> accordingly.
 
 ## Landing UX Updates
-- New `LiveChatToCallDemoSection` (EN-first) added to landing product flow:
+- Hero was upgraded for US-focused conversion with EN/ES localized promise:
+  - EN headline: `AI That Calls Your Leads in Under 2 Minutes.`
+  - EN subheadline: `From live chat to booked meetings—qualify, schedule, and close automatically.`
+  - Primary CTA now scrolls to `#live-chat-demo` and opens the live Lead Chat modal.
+- New `LiveChatToCallDemoSection` added as the main conversion section:
   - two-column premium panel (`Live Chat` -> `AI Call Closer`)
   - frontend-only animated state machine (no backend dependency)
   - consent-required block (explicit AI call consent + optional follow-up consent)
-  - objective selector (`Book Google Meet`, `Schedule a call`, `Simulate a sale`) with dynamic final outcome copy
+  - objective selector (`Book Google Meet`, `Schedule a call`, `Simulate a sale`) with dynamic outcome
   - integration-ready hooks: `onSubmitLead()` and `onStartDemoCall()`
+- New reusable `LeadChatPublicWidget` (3-step conversion funnel):
+  - goal selection (`appointments`, `close deals`, `pricing`)
+  - name + business capture
+  - E.164 phone + required consent
+  - urgency + no-card microcopy
+- New public route `/lead-chat-public` renders the Lead Chat widget standalone.
+- Landing now includes a conversion offer banner in Hero and Pricing:
+  - EN: `We call your first lead for free.`
 - Pricing section is followed by a horizontal testimonials rail (Instagram-style swipe/scroll) with real profile photos and 4-5 star ratings.
 - A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
 - Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.

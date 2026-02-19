@@ -20,12 +20,14 @@ import {
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { LiveChatToCallDemoSection } from "@/components/landing/live-chat-to-call-demo-section";
+import { LeadChatPublicWidget } from "@/components/landing/lead-chat-public-widget";
+import { DemoLeadPayload, LiveChatToCallDemoSection } from "@/components/landing/live-chat-to-call-demo-section";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 type SimpleSession = {
@@ -58,6 +60,7 @@ const fadeUp = {
 export default function HomePage() {
   const { t } = useLocale();
   const [session, setSession] = useState<SimpleSession | null>(null);
+  const [isLeadChatModalOpen, setIsLeadChatModalOpen] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
   const [testimonialPageCount, setTestimonialPageCount] = useState(1);
@@ -101,11 +104,29 @@ export default function HomePage() {
     [t],
   );
 
-  const stats = useMemo(
+  const benefits = useMemo(
     () => [
-      { value: "37%", label: t("de llamadas se pierden fuera de horario", "of calls are missed after hours") },
-      { value: "42%", label: t("menos conversion por llamadas no atendidas", "less conversion from missed calls") },
-      { value: "3.1x", label: t("mas citas cuando la respuesta es inmediata", "more appointments with immediate response") },
+      {
+        title: t("Responde en menos de 2 minutos", "Respond in under 2 minutes"),
+        description: t(
+          "Convierte intencion en conversaciones reales antes de que el lead se enfrie.",
+          "Turn intent into real conversations before the lead goes cold.",
+        ),
+      },
+      {
+        title: t("Califica y agenda automaticamente", "Qualify and schedule automatically"),
+        description: t(
+          "El embudo combina chat + llamada IA para mover al lead al siguiente paso sin friccion.",
+          "The funnel combines chat + AI call to move the lead to the next step without friction.",
+        ),
+      },
+      {
+        title: t("ROI claro desde la primera cita", "Clear ROI from the first appointment"),
+        description: t(
+          "Muchos equipos recuperan la inversion con una cita extra agendada.",
+          "Most teams recover the cost with one extra booked appointment.",
+        ),
+      },
     ],
     [t],
   );
@@ -593,6 +614,36 @@ export default function HomePage() {
     return () => window.clearTimeout(resumeTimer);
   }, [isTestimonialAutoplayPaused]);
 
+  function scrollToLiveDemo(openModal = false) {
+    const section = document.getElementById("live-chat-demo");
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (openModal) {
+      setIsLeadChatModalOpen(true);
+    }
+  }
+
+  async function onSubmitDemoLead(payload: DemoLeadPayload) {
+    void payload;
+    // TODO: connect to backend lead capture endpoint.
+  }
+
+  async function onStartDemoCall(payload: DemoLeadPayload) {
+    void payload;
+    // TODO: connect to Twilio demo call trigger.
+  }
+
+  async function onSubmitLeadChatWidget(payload: {
+    goal: "appointments" | "close_deals" | "pricing";
+    name: string;
+    business: string;
+    phoneE164: string;
+    consentCall: true;
+    consentFollowUp: boolean;
+  }) {
+    void payload;
+    // TODO: connect Lead Chat widget with public handoff endpoint.
+  }
+
   return (
     <div className="landing-root relative min-h-screen overflow-x-clip bg-[#0B0F19] text-white">
       <div className="pointer-events-none absolute inset-0 [background:radial-gradient(40rem_40rem_at_15%_15%,rgba(69,94,255,0.18),transparent),radial-gradient(36rem_36rem_at_85%_10%,rgba(144,76,255,0.18),transparent),linear-gradient(to_bottom,#0B0F19,#0B0F19)]" />
@@ -651,6 +702,10 @@ export default function HomePage() {
               Silicon Valley 2026 Sales Infra
             </Badge>
 
+            <p className="mx-auto mt-4 inline-flex rounded-full border border-[#7F9BFF]/35 bg-[#273866]/35 px-4 py-1.5 text-xs font-medium text-[#C4D2FF]">
+              {t("Llamamos a tu primer lead gratis.", "We call your first lead for free.")}
+            </p>
+
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -658,7 +713,7 @@ export default function HomePage() {
               className="mt-7 text-balance text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl"
             >
               <span className="bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
-                {t("Tu equipo nunca vuelve a perder una llamada.", "Your team never misses a call again.")}
+                {t("IA que llama a tus leads en menos de 2 minutos.", "AI That Calls Your Leads in Under 2 Minutes.")}
               </span>
             </motion.h1>
 
@@ -669,8 +724,8 @@ export default function HomePage() {
               className="mx-auto mt-6 max-w-3xl text-pretty text-base leading-relaxed text-white/70 sm:text-lg"
             >
               {t(
-                "Automatiza llamadas entrantes con un agente de IA que califica, agenda y transfiere en tiempo real.",
-                "Automate inbound calls with an AI agent that qualifies, schedules and transfers in real time.",
+                "Del chat a reuniones agendadas: califica, agenda y cierra en automatico.",
+                "From live chat to booked meetings—qualify, schedule, and close automatically.",
               )}
             </motion.p>
 
@@ -681,28 +736,34 @@ export default function HomePage() {
               className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <Button
-                asChild
+                type="button"
                 size="lg"
                 className="h-12 w-full bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] text-white shadow-[0_0_32px_rgba(86,92,255,0.4)] hover:opacity-95 sm:w-auto"
+                onClick={() => scrollToLiveDemo(true)}
               >
-                <Link href={primaryHref}>
-                  {t("Empieza Gratis", "Start Free")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                {t("Probar demo en vivo", "Try the Live Demo")}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button
-                asChild
+                type="button"
                 size="lg"
                 variant="ghost"
                 className="h-12 w-full border border-white/15 bg-white/[0.03] text-white/85 hover:bg-white/[0.08] sm:w-auto"
+                onClick={() => scrollToLiveDemo(true)}
               >
-                <Link href="/sign-in">{t("Ver Demo", "Watch Demo")}</Link>
+                {t("Ver como agenda una reunion", "Watch it book a meeting")}
               </Button>
             </motion.div>
+
+            <p className="mt-4 text-sm text-white/65">{t("Sin tarjeta. Prueba la demo en vivo.", "No credit card. Try the live demo now.")}</p>
           </motion.div>
         </section>
 
-        <LiveChatToCallDemoSection />
+        <LiveChatToCallDemoSection
+          onSubmitLead={onSubmitDemoLead}
+          onStartDemoCall={onStartDemoCall}
+          onOpenLeadChat={() => setIsLeadChatModalOpen(true)}
+        />
 
         <section className="scroll-mt-28 px-1 pb-16">
           <motion.div
@@ -713,11 +774,11 @@ export default function HomePage() {
             transition={{ duration: 0.65 }}
             className="grid gap-4 md:grid-cols-3"
           >
-            {stats.map((stat) => (
-              <Card key={stat.value} className="border-white/10 bg-white/[0.03]">
+            {benefits.map((benefit) => (
+              <Card key={benefit.title} className="border-white/10 bg-white/[0.03]">
                 <CardContent className="p-6">
-                  <p className="text-4xl font-semibold text-white">{stat.value}</p>
-                  <p className="mt-3 text-sm leading-relaxed text-white/65">{stat.label}</p>
+                  <p className="text-lg font-semibold text-white">{benefit.title}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-white/65">{benefit.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -818,6 +879,10 @@ export default function HomePage() {
             description={t("Empieza pequeno y escala a operacion enterprise sin rehacer tu proceso.", "Start small and scale to enterprise operations without rebuilding your process.")}
           />
 
+          <div className="mt-6 rounded-2xl border border-[#7F9BFF]/30 bg-[#243665]/32 px-4 py-3 text-center text-sm text-[#C4D2FF]">
+            {t("Llamamos a tu primer lead gratis.", "We call your first lead for free.")}
+          </div>
+
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {plans.map((plan, index) => (
               <motion.div
@@ -862,6 +927,12 @@ export default function HomePage() {
                     >
                       <Link href={`/register?plan=${plan.name.toLowerCase()}`}>{t("Crear Cuenta", "Create Account")}</Link>
                     </Button>
+                    <p className="mt-3 text-xs text-white/60">
+                      {t(
+                        "Muchos recuperan el costo con 1 cita extra agendada.",
+                        "Most teams recover the cost with 1 extra booked job.",
+                      )}
+                    </p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1079,35 +1150,61 @@ export default function HomePage() {
             transition={{ duration: 0.65 }}
             className="rounded-3xl border border-white/15 bg-gradient-to-r from-[#1A2F73] via-[#273A8A] to-[#5A2CA8] p-7 shadow-[0_30px_80px_rgba(67,85,201,0.45)] sm:p-10"
           >
-            <p className="text-xs uppercase tracking-[0.16em] text-white/75">Ready to launch</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-white/75">Final CTA</p>
             <h2 className="mt-3 max-w-2xl text-balance text-3xl font-semibold leading-tight sm:text-4xl">
-              {t("Activa tu agente en 5 minutos.", "Activate your agent in 5 minutes.")}
+              {t("Mira a la IA agendar una cita real.", "See the AI book a real appointment.")}
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
               {t(
-                "Convierte mas llamadas en reuniones de venta sin aumentar headcount. Tu equipo se enfoca en cerrar, la IA se encarga del primer contacto.",
-                "Turn more calls into sales meetings without increasing headcount. Your team focuses on closing while AI handles first contact.",
+                "Activa la demo guiada y observa el flujo completo de chat, consentimiento, llamada y cierre.",
+                "Launch the guided demo and watch the complete flow: chat, consent, call, and close.",
               )}
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 bg-white text-[#1A2456] hover:bg-white/90">
-                <Link href={primaryHref}>
-                  {isAuthenticated ? t("Abrir Dashboard", "Open Dashboard") : t("Empieza Gratis", "Start Free")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+              <Button
+                type="button"
+                size="lg"
+                className="h-12 bg-white text-[#1A2456] hover:bg-white/90"
+                onClick={() => scrollToLiveDemo(true)}
+              >
+                {t("Probar demo en vivo", "Try the Live Demo")}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button
-                asChild
+                type="button"
                 size="lg"
                 variant="ghost"
                 className="h-12 border border-white/30 bg-white/10 text-white hover:bg-white/20"
+                onClick={() => scrollToLiveDemo(false)}
               >
-                <Link href="/sign-in">{t("Ver Demo", "Watch Demo")}</Link>
+                {t("Ver como agenda una reunion", "Watch it book a meeting")}
               </Button>
             </div>
           </motion.div>
         </section>
+
+        <Sheet open={isLeadChatModalOpen} onOpenChange={setIsLeadChatModalOpen}>
+          <SheetContent
+            side="right"
+            className="w-full border-l-white/15 bg-[#0D1325]/98 p-0 text-white sm:max-w-2xl"
+          >
+            <SheetHeader className="border-b border-white/10 px-5 py-4">
+              <SheetTitle className="text-lg text-white">
+                {t("Lead Chat en vivo", "Live Lead Chat")}
+              </SheetTitle>
+              <SheetDescription className="text-white/65">
+                {t(
+                  "Embudo de conversion: objetivo, datos y consentimiento en segundos.",
+                  "Conversion funnel: objective, details, and consent in seconds.",
+                )}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="h-full overflow-y-auto px-4 py-4 sm:px-5">
+              <LeadChatPublicWidget compact onSubmitLead={onSubmitLeadChatWidget} />
+            </div>
+          </SheetContent>
+        </Sheet>
 
         <footer className="border-t border-white/10 px-1 pt-6">
           <div className="flex flex-col gap-4 pb-6 text-sm text-white/65 md:flex-row md:items-start md:justify-between">
