@@ -77,6 +77,30 @@ enum CalendarProvider {
   manual
 }
 
+enum BridgeLeadObjective {
+  CLOSE_SALE
+  BOOK_MEET
+  BOOK_IN_PERSON
+  SCHEDULE_FOLLOWUP
+}
+
+enum BridgeLeadStatus {
+  new
+  queued
+  calling
+  completed
+  failed
+}
+
+enum BridgeLeadOutcome {
+  unknown
+  sold
+  booked
+  followup
+  not_interested
+  disqualified
+}
+
 enum TranscriptSpeaker {
   user
   assistant
@@ -148,6 +172,9 @@ model Workspace {
   metricsDaily  MetricDaily[]
   callPreferences AgentCallPreferences?
   businessProfile BusinessProfile?
+  bridgeCustomers Customer[]
+  bridgeLeads     BridgeLead[]
+  callLogs        CallLog[]
 
   @@index([ownerId])
 }
@@ -201,6 +228,7 @@ model AgentConfig {
   updatedAt              DateTime @updatedAt
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  bridgeLeads BridgeLead[]
 }
 
 model Lead {
@@ -227,6 +255,67 @@ model Lead {
   @@index([workspaceId, status])
   @@index([workspaceId, phone])
   @@unique([workspaceId, phone])
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  customerName String
+  customerId   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads     BridgeLead[]
+
+  @@unique([workspaceId, customerName])
+  @@unique([workspaceId, customerId])
+  @@index([workspaceId, createdAt])
+}
+
+model BridgeLead {
+  id            String             @id @default(cuid())
+  workspaceId   String
+  customerId    String
+  agentId       String
+  externalId    String
+  clientName    String?
+  phoneE164     String
+  objective     BridgeLeadObjective
+  collectedInfo Json
+  preferredTimes Json
+  status        BridgeLeadStatus   @default(new)
+  lastCallSid   String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  agent     AgentConfig @relation(fields: [agentId], references: [id], onDelete: Restrict)
+  callLogs  CallLog[]
+
+  @@unique([customerId, externalId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, phoneE164])
+}
+
+model CallLog {
+  id         String           @id @default(cuid())
+  workspaceId String
+  leadId      String
+  callSid     String?
+  outcome     BridgeLeadOutcome @default(unknown)
+  transcript  String?          @db.Text
+  summary     String?          @db.Text
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      BridgeLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([leadId, createdAt])
+  @@index([callSid])
 }
 
 model Call {

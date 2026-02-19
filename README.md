@@ -156,6 +156,67 @@ Salida programática (botón Test Call):
 6. En trial de Twilio, el destino debe estar en **Verified Caller IDs**; si no, la UI mostrará:
    - `Twilio Trial: verify the destination number in Verified Caller IDs.`
 
+## Puente (JSON lead import)
+
+Nueva sección en `Settings -> Puente` para importar leads y lanzar llamadas outbound con el guion del agente configurado en dashboard.
+
+### Formato `lead-import.json` (v1)
+
+```json
+{
+  "version": 1,
+  "customer": {
+    "customerName": "Solar North LLC",
+    "customerId": "cust_solar_north_001",
+    "agentId": "cm7abc123xyz456"
+  },
+  "leads": [
+    {
+      "externalId": "lead_1001",
+      "clientName": "John Miller",
+      "phoneE164": "+51924464410",
+      "objective": "CLOSE_SALE",
+      "collectedInfo": {
+        "serviceNeeded": "Solar installation",
+        "budgetRange": "15000-25000",
+        "urgency": "this month",
+        "notes": "Asked for financing options"
+      },
+      "preferredTimes": [
+        { "date": "2026-02-20", "time": "10:30", "timezone": "America/Lima" }
+      ]
+    }
+  ]
+}
+```
+
+### Reglas de validación
+
+- `version` debe ser `1`
+- `customer.customerName` y `customer.agentId` son obligatorios
+- `leads` mínimo 1, máximo 5000
+- `externalId` obligatorio y único dentro del archivo
+- `phoneE164` debe ser E.164 (`+51...`, `+1...`)
+- tamaño máximo del archivo: `200KB`
+
+### Endpoints Puente
+
+- `POST /api/bridge/import`
+- `GET /api/bridge/leads?customerId=<id>&page=1&pageSize=50`
+- `POST /api/bridge/leads/:id/call`
+- `POST /api/bridge/leads/:id/outcome`
+
+### Flujo de prueba rápida
+
+1. Ir a `Settings -> Puente`.
+2. Subir `lead-import.json` y pulsar **Importar**.
+3. Verificar que los leads aparecen en tabla con estado `new`.
+4. Pulsar **Llamar ahora** en un lead.
+5. En Twilio Monitor validar request `200` a:
+   - `/api/twilio/voice/outbound?agentId=...&leadId=...`
+   - `/api/twilio/voice/status`
+6. Confirmar que la apertura usa el `welcomeMessage` del agente y el objetivo del lead importado.
+
 ## Flujo MVP implementado
 
 - Auth + workspaces multi-tenant

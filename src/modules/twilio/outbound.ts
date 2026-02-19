@@ -2,6 +2,7 @@ import { twiml } from "twilio";
 import { z } from "zod";
 
 import { buildCallObjectivePlaybook, deserializePreferences } from "@/modules/call-objectives/service";
+import { loadBridgeLeadContext } from "@/modules/bridge/service";
 import { appendTranscriptTurn, createInboundCall } from "@/modules/calls/service";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -43,7 +44,30 @@ function buildColdCallSystemPrompt(params: {
   playbook: ReturnType<typeof buildCallObjectivePlaybook>;
   checklist: string[];
   disallowedClaims: string[];
+  leadContext?: {
+    clientName?: string | null;
+    externalId?: string;
+    customerName?: string;
+    objectivePrompt?: string;
+    preferredTimes?: string[];
+    collectedEntries?: string[];
+  } | null;
 }) {
+  const leadContextLines = params.leadContext
+    ? [
+        `Lead externalId: ${params.leadContext.externalId ?? "n/a"}`,
+        params.leadContext.clientName ? `Lead name: ${params.leadContext.clientName}` : "",
+        params.leadContext.customerName ? `Customer: ${params.leadContext.customerName}` : "",
+        params.leadContext.objectivePrompt ? params.leadContext.objectivePrompt : "",
+        params.leadContext.preferredTimes?.length
+          ? `Preferred times: ${params.leadContext.preferredTimes.join(" | ")}`
+          : "",
+        params.leadContext.collectedEntries?.length
+          ? `Collected lead data: ${params.leadContext.collectedEntries.join(" | ")}`
+          : "",
+      ].filter(Boolean)
+    : [];
+
   return [
     params.systemPrompt,
     "",
@@ -58,6 +82,8 @@ function buildColdCallSystemPrompt(params: {
     `Qualification checklist: ${params.checklist.join(" | ") || "Use lead source, budget, urgency, decision maker."}`,
     `Disallowed claims: ${params.disallowedClaims.join(" | ") || "No unsupported claims."}`,
     `Compliance bullets: ${params.playbook.complianceBullets.join(" | ")}`,
+    leadContextLines.length > 0 ? "LEAD CONTEXT:" : "",
+    ...leadContextLines,
   ]
     .filter(Boolean)
     .join("\n");
@@ -167,7 +193,7 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
 
   const baseUrl = input.requestBaseUrl ?? getBaseUrl();
   const statusCallbackUrl = `${baseUrl}/api/twilio/voice/status`;
-  const runtime = await resolveRuntimeConfig({ agentId: agentConfig.id, workspaceId: null });
+  const runtime = await resolveRuntimeConfig({ agentId: agentConfig.id, workspaceId: null, leadId: null });
 
   if (!runtime) {
     return {
@@ -193,6 +219,7 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
     playbook: runtime.playbook,
     checklist: asStringArray(runtime.agentConfig.qualificationChecklist),
     disallowedClaims: asStringArray(runtime.agentConfig.disallowedClaims),
+    leadContext: runtime.bridgeLeadContext,
   });
 
   const processUrl = `${baseUrl}/api/twilio/voice/process?workspaceId=${runtime.agentConfig.workspaceId}`;
@@ -277,6 +304,7 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
 async function resolveRuntimeConfig(params: {
   agentId: string | null;
   workspaceId: string | null;
+  leadId?: string | null;
 }) {
   const agentConfig = params.agentId
     ? await db.agentConfig.findUnique({
@@ -324,7 +352,7 @@ async function resolveRuntimeConfig(params: {
     return null;
   }
 
-  const [rawPreferences, businessProfile] = await Promise.all([
+  const [rawPreferences, businessProfile, bridgeLeadContext] = await Promise.all([
     db.agentCallPreferences.findUnique({ where: { workspaceId: agentConfig.workspaceId } }).catch(() => null),
     db.businessProfile
       .findUnique({
@@ -332,9 +360,20 @@ async function resolveRuntimeConfig(params: {
         select: { valueProp: true },
       })
       .catch(() => null),
+    loadBridgeLeadContext({
+      leadId: params.leadId ?? null,
+      workspaceId: agentConfig.workspaceId,
+    }),
   ]);
 
-  const preferences = deserializePreferences(rawPreferences);
+  const basePreferences = deserializePreferences(rawPreferences);
+  const preferences =
+    bridgeLeadContext?.mappedObjective
+      ? {
+          ...basePreferences,
+          primaryObjective: bridgeLeadContext.mappedObjective,
+        }
+      : basePreferences;
   const playbook = buildCallObjectivePlaybook({
     agentName: agentConfig.agentName,
     valueProp: businessProfile?.valueProp ?? "",
@@ -346,6 +385,7 @@ async function resolveRuntimeConfig(params: {
     preferences,
     playbook,
     valueProp: businessProfile?.valueProp ?? "",
+    bridgeLeadContext,
   };
 }
 
@@ -389,19 +429,20 @@ export async function handleTwilioOutboundTwiml(request: Request) {
   }
 
   const agentId = url.searchParams.get("agentId") ?? params.agentId ?? null;
+  const leadId = url.searchParams.get("leadId") ?? params.leadId ?? null;
   const workspaceId = url.searchParams.get("workspaceId") ?? params.workspaceId ?? null;
   const callSid = params.CallSid ?? "";
   const fromNumber = params.From ?? "";
   const toNumber = params.To ?? "";
 
-  const runtime = await resolveRuntimeConfig({ agentId, workspaceId });
+  const runtime = await resolveRuntimeConfig({ agentId, workspaceId, leadId });
   if (!runtime) {
     return xmlResponse(
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Say>No AI agent is configured for this outbound call.</Say><Hangup/></Response>",
     );
   }
 
-  const resolvedOpening =
+  const baseOpening =
     runtime.agentConfig.greetingMessage?.trim() ||
     runtime.playbook.opening ||
     buildDefaultOpening({
@@ -409,6 +450,14 @@ export async function handleTwilioOutboundTwiml(request: Request) {
       agentName: runtime.agentConfig.agentName,
       businessName: runtime.agentConfig.workspace.name ?? "your team",
     });
+
+  const resolvedOpening = runtime.bridgeLeadContext?.clientName
+    ? `${baseOpening} ${
+        runtime.preferences.language === "es"
+          ? `Hablo con ${runtime.bridgeLeadContext.clientName}?`
+          : `May I speak with ${runtime.bridgeLeadContext.clientName}?`
+      }`
+    : baseOpening;
 
   if (!callSid || !fromNumber || !toNumber) {
     return xmlResponse(
@@ -428,6 +477,7 @@ export async function handleTwilioOutboundTwiml(request: Request) {
     playbook: runtime.playbook,
     checklist: asStringArray(runtime.agentConfig.qualificationChecklist),
     disallowedClaims: asStringArray(runtime.agentConfig.disallowedClaims),
+    leadContext: runtime.bridgeLeadContext,
   });
 
   await appendTranscriptTurn({
@@ -440,6 +490,8 @@ export async function handleTwilioOutboundTwiml(request: Request) {
       direction: "outbound",
       callSid,
       opening: resolvedOpening,
+      leadId: runtime.bridgeLeadContext?.id,
+      bridgeObjective: runtime.bridgeLeadContext?.objective,
       objective: runtime.preferences.primaryObjective,
       secondaryObjectives: runtime.preferences.secondaryObjectives,
       leadFieldsRequired: runtime.preferences.leadFieldsRequired,

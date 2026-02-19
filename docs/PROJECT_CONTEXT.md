@@ -53,6 +53,20 @@
 - Outbound TwiML bootstraps cold-call playbook from dashboard config (system prompt, checklist, objectives, disallowed claims), then continues multi-turn via `/api/twilio/voice/process`.
 - Twilio process flow now supports `Gather` speech text (`SpeechResult`) as first-class input, falling back to recording transcription when needed.
 
+## Bridge Lead Import (Puente)
+- New tenant-scoped bridge data model:
+  - `Customer` (workspace customer owner for import batches)
+  - `BridgeLead` (externalId + objective + collectedInfo + preferredTimes + call status)
+  - `CallLog` (bridge lead call outcome tracking)
+- New authenticated APIs:
+  - `POST /api/bridge/import` (JSON file/body import with zod validation, upsert by `(customerId, externalId)`)
+  - `GET /api/bridge/leads` (paginated bridge lead list + customer filter)
+  - `POST /api/bridge/leads/:id/call` (Twilio outbound trigger with `url=/api/twilio/voice/outbound?agentId=...&leadId=...`)
+  - `POST /api/bridge/leads/:id/outcome` (manual outcome logging)
+- Settings now includes a `Puente` section to upload JSON, inspect imported leads, and click `Llamar ahora`.
+- Twilio outbound TwiML now consumes optional `leadId` to inject lead-aware playbook context (objective, collected info, preferred times) while preserving dashboard agent config and guardrails.
+- Voice status webhook updates both standard call records and `BridgeLead` status by `CallSid`.
+
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.
 - Telephony number form now shows explicit success/error state after submit.

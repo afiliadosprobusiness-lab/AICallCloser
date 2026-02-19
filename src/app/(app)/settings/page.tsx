@@ -1,4 +1,5 @@
 import { OutboundCallerIdForm } from "@/components/app/outbound-caller-id-form";
+import { BridgeSettingsPanel } from "@/components/app/bridge-settings-panel";
 import { TwilioNumberForm } from "@/components/app/twilio-number-form";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { db } from "@/lib/db";
@@ -25,7 +26,7 @@ export default async function SettingsPage() {
   const statusPath = `/api/${voiceProvider}/voice/status`;
   const outboundPath = `/api/${voiceProvider}/voice/outbound`;
 
-  const [workspace, numbers, config] = await Promise.all([
+  const [workspace, numbers, config, bridgeCustomers, bridgeLeads] = await Promise.all([
     db.workspace
       .findUnique({
         where: { id: workspaceId },
@@ -60,6 +61,44 @@ export default async function SettingsPage() {
         },
       })
       .catch(() => null),
+    db.customer
+      .findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+        select: {
+          id: true,
+          customerName: true,
+          customerId: true,
+        },
+      })
+      .catch(() => []),
+    db.bridgeLead
+      .findMany({
+        where: { workspaceId },
+        orderBy: { updatedAt: "desc" },
+        take: 100,
+        select: {
+          id: true,
+          customerId: true,
+          externalId: true,
+          clientName: true,
+          phoneE164: true,
+          objective: true,
+          status: true,
+          lastCallSid: true,
+          collectedInfo: true,
+          preferredTimes: true,
+          updatedAt: true,
+          customer: {
+            select: {
+              customerName: true,
+              customerId: true,
+            },
+          },
+        },
+      })
+      .catch(() => []),
   ]);
 
   const checklistItems = [
@@ -93,6 +132,17 @@ export default async function SettingsPage() {
   );
   const outboundNumber =
     numbers.find((item) => hasOutboundMarker(item.friendlyName))?.phoneNumber ?? null;
+  const normalizedBridgeLeads = bridgeLeads.map((lead) => ({
+    ...lead,
+    collectedInfo:
+      typeof lead.collectedInfo === "object" && lead.collectedInfo !== null
+        ? (lead.collectedInfo as Record<string, unknown>)
+        : {},
+    preferredTimes: Array.isArray(lead.preferredTimes)
+      ? (lead.preferredTimes as Array<{ date: string; time: string; timezone: string }>)
+      : [],
+    updatedAt: lead.updatedAt.toISOString(),
+  }));
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -222,6 +272,10 @@ export default async function SettingsPage() {
             ))
           )}
         </div>
+      </PremiumCard>
+
+      <PremiumCard className="space-y-4 p-4 md:p-5">
+        <BridgeSettingsPanel initialCustomers={bridgeCustomers} initialLeads={normalizedBridgeLeads} />
       </PremiumCard>
 
       <PremiumCard className="space-y-2 p-4 text-sm text-[#B9B4A9]">
