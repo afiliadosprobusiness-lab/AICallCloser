@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Send, ShieldCheck } from "lucide-react";
 
@@ -23,6 +23,19 @@ export type LeadChatPayload = {
   demoObjective?: DemoObjective;
 };
 
+export type LeadChatLiveDemoData = {
+  goal: LeadChatGoal | null;
+  goalLabel: string;
+  name: string;
+  business: string;
+  phoneE164: string;
+  demoObjective?: DemoObjective;
+  consentCall: boolean;
+  consentFollowUp: boolean;
+  step: 1 | 2 | 3 | 4;
+  completed: boolean;
+};
+
 export type LeadChatPrefillContext = {
   seed: string;
   goal: LeadChatGoal;
@@ -36,6 +49,8 @@ export type LeadChatPrefillContext = {
 
 type LeadChatPublicWidgetProps = {
   onSubmitLead?: (payload: LeadChatPayload) => void | Promise<void>;
+  onLiveDataChange?: (payload: LeadChatLiveDemoData) => void;
+  onCompleted?: (payload: LeadChatPayload) => void | Promise<void>;
   compact?: boolean;
   prefillContext?: LeadChatPrefillContext | null;
 };
@@ -136,6 +151,8 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
   const { locale } = useLocale();
   const language: LocaleKey = locale === "en" ? "en" : "es";
   const copy = COPY[language];
+  const onLiveDataChange = props.onLiveDataChange;
+  const prefillDemoObjective = props.prefillContext?.demoObjective;
   const [step, setStep] = useState<1 | 2 | 3 | 4>(props.prefillContext ? 2 : 1);
   const [goal, setGoal] = useState<LeadChatGoal | null>(props.prefillContext?.goal ?? null);
   const [name, setName] = useState(props.prefillContext?.name ?? "");
@@ -173,6 +190,28 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
 
     return list;
   }, [business, copy.askNameBiz, copy.askPhoneConsent, copy.finishMsg, copy.goalButtons, goal, name, startMessage, step]);
+
+  const liveData = useMemo<LeadChatLiveDemoData>(() => {
+    const normalizedName = name.trim();
+    const normalizedBusiness = business.trim();
+    const normalizedPhone = phone.trim();
+    return {
+      goal,
+      goalLabel: goal ? copy.goalButtons[goal] : "",
+      name: normalizedName,
+      business: normalizedBusiness,
+      phoneE164: normalizedPhone,
+      demoObjective: prefillDemoObjective,
+      consentCall,
+      consentFollowUp,
+      step,
+      completed: step === 4,
+    };
+  }, [business, consentCall, consentFollowUp, copy.goalButtons, goal, name, phone, prefillDemoObjective, step]);
+
+  useEffect(() => {
+    onLiveDataChange?.(liveData);
+  }, [liveData, onLiveDataChange]);
 
   function handleStep1() {
     if (!goal) {
@@ -217,6 +256,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
     };
 
     void props.onSubmitLead?.(payload);
+    void props.onCompleted?.(payload);
   }
 
   return (

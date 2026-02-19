@@ -21,6 +21,7 @@ import {
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
 import {
+  LeadChatLiveDemoData,
   LeadChatPayload,
   LeadChatPublicWidget,
   type LeadChatPrefillContext,
@@ -29,6 +30,7 @@ import {
   DemoLeadPayload,
   LiveChatToCallDemoSection,
   type LiveDemoPrefillContext,
+  type LiveDemoRuntimeContext,
 } from "@/components/landing/live-chat-to-call-demo-section";
 import { UseCasesSection, type UseCaseSelectionPayload } from "@/components/landing/use-cases-section";
 import { useLocale } from "@/components/providers/locale-provider";
@@ -67,11 +69,12 @@ const fadeUp = {
 };
 
 export default function HomePage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [session, setSession] = useState<SimpleSession | null>(null);
   const [isLeadChatModalOpen, setIsLeadChatModalOpen] = useState(false);
   const [liveDemoPrefill, setLiveDemoPrefill] = useState<LiveDemoPrefillContext | null>(null);
   const [leadChatPrefill, setLeadChatPrefill] = useState<LeadChatPrefillContext | null>(null);
+  const [liveDemoRuntime, setLiveDemoRuntime] = useState<LiveDemoRuntimeContext | null>(null);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
   const [testimonialPageCount, setTestimonialPageCount] = useState(1);
@@ -90,6 +93,7 @@ export default function HomePage() {
     startX: 0,
     scrollLeft: 0,
   });
+  const leadChatAutoCloseTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +113,14 @@ export default function HomePage() {
 
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (leadChatAutoCloseTimerRef.current != null) {
+        window.clearTimeout(leadChatAutoCloseTimerRef.current);
+      }
     };
   }, []);
 
@@ -679,13 +691,43 @@ export default function HomePage() {
     const section = document.getElementById("live-chat-demo");
     section?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (openModal) {
+      clearLeadChatAutoCloseTimer();
       setIsLeadChatModalOpen(true);
     }
+  }
+
+  function clearLeadChatAutoCloseTimer() {
+    if (leadChatAutoCloseTimerRef.current == null) return;
+    window.clearTimeout(leadChatAutoCloseTimerRef.current);
+    leadChatAutoCloseTimerRef.current = null;
+  }
+
+  function scheduleLeadChatAutoClose() {
+    clearLeadChatAutoCloseTimer();
+    leadChatAutoCloseTimerRef.current = window.setTimeout(() => {
+      setIsLeadChatModalOpen(false);
+      leadChatAutoCloseTimerRef.current = null;
+    }, 5000);
   }
 
   function onUseCaseSelect(payload: UseCaseSelectionPayload) {
     setLiveDemoPrefill(payload.liveDemoPrefill);
     setLeadChatPrefill(payload.leadChatPrefill);
+    setLiveDemoRuntime({
+      leadName: payload.leadChatPrefill.name,
+      business: payload.leadChatPrefill.business,
+      phone: payload.leadChatPrefill.phoneE164,
+      goal:
+        payload.leadChatPrefill.goal === "appointments"
+          ? t("agendar citas", "book appointments")
+          : payload.leadChatPrefill.goal === "close_deals"
+            ? t("cerrar ventas", "close deals")
+            : t("ver precios", "check pricing"),
+      openingMessage:
+        locale === "en"
+          ? payload.leadChatPrefill.openingMessageEn
+          : payload.leadChatPrefill.openingMessageEs,
+    });
     scrollToLiveDemo(true);
   }
 
@@ -702,6 +744,31 @@ export default function HomePage() {
   async function onSubmitLeadChatWidget(payload: LeadChatPayload) {
     void payload;
     // TODO: connect Lead Chat widget with public handoff endpoint.
+  }
+
+  function onLeadChatLiveDataChange(payload: LeadChatLiveDemoData) {
+    setLiveDemoRuntime((prev) => {
+      const leadName = payload.name || prev?.leadName || liveDemoPrefill?.leadName || "";
+      const business = payload.business || prev?.business || "";
+      const phone = payload.phoneE164 || prev?.phone || "";
+      const goal = payload.goalLabel || prev?.goal || "";
+      const openingMessage =
+        locale === "en"
+          ? `Hi, I am ${leadName || "there"}. I run ${business || "a business"} and want ${goal || "more customers"}.`
+          : `Hola, soy ${leadName || "cliente"}. Tengo ${business || "un negocio"} y quiero ${goal || "mas clientes"}.`;
+
+      return {
+        leadName,
+        business,
+        phone,
+        goal,
+        openingMessage,
+      };
+    });
+  }
+
+  function onLeadChatCompleted() {
+    scheduleLeadChatAutoClose();
   }
 
   return (
@@ -836,8 +903,12 @@ export default function HomePage() {
           key={liveDemoPrefill?.seed ?? "live-demo-default"}
           onSubmitLead={onSubmitDemoLead}
           onStartDemoCall={onStartDemoCall}
-          onOpenLeadChat={() => setIsLeadChatModalOpen(true)}
+          onOpenLeadChat={() => {
+            clearLeadChatAutoCloseTimer();
+            setIsLeadChatModalOpen(true);
+          }}
           prefillContext={liveDemoPrefill}
+          runtimeContext={liveDemoRuntime}
         />
 
         <section className="scroll-mt-28 px-1 pb-16">
@@ -1265,7 +1336,13 @@ export default function HomePage() {
           </motion.div>
         </section>
 
-        <Sheet open={isLeadChatModalOpen} onOpenChange={setIsLeadChatModalOpen}>
+        <Sheet
+          open={isLeadChatModalOpen}
+          onOpenChange={(open) => {
+            if (!open) clearLeadChatAutoCloseTimer();
+            setIsLeadChatModalOpen(open);
+          }}
+        >
           <SheetContent
             side="right"
             className="w-full border-l-white/15 bg-[#0D1325]/98 p-0 text-white sm:max-w-2xl"
@@ -1286,6 +1363,8 @@ export default function HomePage() {
                 key={leadChatPrefill?.seed ?? "lead-chat-default"}
                 compact
                 onSubmitLead={onSubmitLeadChatWidget}
+                onLiveDataChange={onLeadChatLiveDataChange}
+                onCompleted={onLeadChatCompleted}
                 prefillContext={leadChatPrefill}
               />
             </div>

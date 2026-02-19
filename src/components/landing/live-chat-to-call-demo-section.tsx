@@ -33,6 +33,14 @@ export type LiveDemoPrefillContext = {
   openingMessageEs: string;
 };
 
+export type LiveDemoRuntimeContext = {
+  leadName?: string;
+  business?: string;
+  phone?: string;
+  goal?: string;
+  openingMessage?: string;
+};
+
 type DemoStage = "chatting" | "awaiting_consent" | "consent_received" | "calling" | "on_call" | "outcome";
 type LocaleKey = "en" | "es";
 
@@ -46,6 +54,7 @@ type LiveChatToCallDemoSectionProps = {
   onStartDemoCall?: (payload: DemoLeadPayload) => void | Promise<void>;
   onOpenLeadChat?: () => void;
   prefillContext?: LiveDemoPrefillContext | null;
+  runtimeContext?: LiveDemoRuntimeContext | null;
 };
 
 const DEMO_LEAD = {
@@ -251,10 +260,12 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
   const { locale } = useLocale();
   const language: LocaleKey = locale === "en" ? "en" : "es";
   const copy = COPY[language];
-  const activeLeadName = props.prefillContext?.leadName ?? DEMO_LEAD.name;
-  const activePhone = props.prefillContext?.phone ?? DEMO_LEAD.phone;
+  const activeLeadName = props.runtimeContext?.leadName?.trim() || props.prefillContext?.leadName || DEMO_LEAD.name;
+  const activePhone = props.runtimeContext?.phone?.trim() || props.prefillContext?.phone || DEMO_LEAD.phone;
   const activeBusiness =
-    props.prefillContext == null
+    props.runtimeContext?.business?.trim()
+      ? props.runtimeContext.business.trim()
+      : props.prefillContext == null
       ? language === "en"
         ? DEMO_LEAD.businessEn
         : DEMO_LEAD.businessEs
@@ -262,7 +273,9 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
         ? props.prefillContext.industryEn
         : props.prefillContext.industryEs;
   const activeGoal =
-    props.prefillContext == null
+    props.runtimeContext?.goal?.trim()
+      ? props.runtimeContext.goal.trim()
+      : props.prefillContext == null
       ? language === "en"
         ? "more customers this month"
         : "mas clientes este mes"
@@ -270,7 +283,9 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
         ? props.prefillContext.goalEn
         : props.prefillContext.goalEs;
   const openingMessage =
-    props.prefillContext == null
+    props.runtimeContext?.openingMessage?.trim()
+      ? props.runtimeContext.openingMessage.trim()
+      : props.prefillContext == null
       ? copy.chat[0]?.text ?? ""
       : language === "en"
         ? props.prefillContext.openingMessageEn
