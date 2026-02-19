@@ -108,6 +108,17 @@ test("leads handoff returns 401 with invalid token", async () => {
   assert.equal(json.error, "Unauthorized");
 });
 
+test("leads handoff accepts api key with trailing escaped CRLF", async () => {
+  const response = await handleLeadsWidgetHandoff(
+    buildRequest(basePayload, "secret-token"),
+    createDeps({ apiKey: "secret-token\\r\\n" }),
+  );
+  const json = (await response.json()) as Record<string, unknown>;
+
+  assert.equal(response.status, 200);
+  assert.equal(json.success, true);
+});
+
 test("leads handoff returns 400 when consent is false", async () => {
   const payload = {
     ...basePayload,

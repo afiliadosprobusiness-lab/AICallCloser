@@ -23,11 +23,20 @@ function normalizeBearerToken(value: string | null) {
   return token.trim();
 }
 
-function secureTokenCompare(expected: string, received: string) {
-  const expectedBuffer = Buffer.from(expected, "utf8");
-  const receivedBuffer = Buffer.from(received, "utf8");
+function normalizeTokenValue(value: string) {
+  return value
+    .trim()
+    .replace(/(?:\\r\\n|\\n|\\r)+$/g, "")
+    .replace(/[\r\n]+$/g, "");
+}
 
-  if (expectedBuffer.length !== receivedBuffer.length) {
+function secureTokenCompare(expected: string, received: string) {
+  const normalizedExpected = normalizeTokenValue(expected);
+  const normalizedReceived = normalizeTokenValue(received);
+  const expectedBuffer = Buffer.from(normalizedExpected, "utf8");
+  const receivedBuffer = Buffer.from(normalizedReceived, "utf8");
+
+  if (!expectedBuffer.length || expectedBuffer.length !== receivedBuffer.length) {
     return false;
   }
 
@@ -89,7 +98,9 @@ export async function handleLeadsWidgetHandoff(
 
   try {
     const token = normalizeBearerToken(request.headers.get("authorization"));
-    if (!deps.apiKey) {
+    const apiKey = deps.apiKey ? normalizeTokenValue(deps.apiKey) : "";
+
+    if (!apiKey) {
       deps.logger.warn(
         {
           request_id: requestId,
@@ -111,7 +122,7 @@ export async function handleLeadsWidgetHandoff(
       return toJson({ error: "Unauthorized" }, 401);
     }
 
-    if (!secureTokenCompare(deps.apiKey, token)) {
+    if (!secureTokenCompare(apiKey, token)) {
       deps.logger.warn(
         {
           request_id: requestId,
