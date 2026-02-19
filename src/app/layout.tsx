@@ -75,7 +75,9 @@ export default async function RootLayout({
       <body className={`${manrope.variable} ${playfair.variable} notranslate antialiased`} translate="no">
         <ThemeProvider theme={theme}>
           <LocaleProvider locale={locale}>
-            <FirebaseProvider>{children}</FirebaseProvider>
+            <FirebaseProvider>
+              <div id="app-theme-root">{children}</div>
+            </FirebaseProvider>
           </LocaleProvider>
         </ThemeProvider>
       </body>

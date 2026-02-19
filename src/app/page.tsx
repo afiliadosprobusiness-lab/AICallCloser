@@ -22,6 +22,7 @@ import {
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
+import { ExternalWidgetThemeSync } from "@/components/landing/external-widget-theme-sync";
 import {
   LeadChatLiveDemoData,
   LeadChatPayload,
@@ -1549,6 +1550,7 @@ export default function HomePage() {
         src="https://leads-widget.vercel.app/api/w/q7ccwgzm2g.js"
         strategy="afterInteractive"
       />
+      <ExternalWidgetThemeSync />
     </div>
   );
 }

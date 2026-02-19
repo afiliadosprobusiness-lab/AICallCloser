@@ -103,13 +103,13 @@
    * This keeps dark as default and enables a full-platform light mode
    * without rewriting every component class.
    */
-  html.light body {
+  html.light #app-theme-root {
     filter: invert(1) hue-rotate(180deg);
   }
 
-  html.light img,
-  html.light video,
-  html.light canvas {
+  html.light #app-theme-root img,
+  html.light #app-theme-root video,
+  html.light #app-theme-root canvas {
     filter: invert(1) hue-rotate(180deg);
   }
 
