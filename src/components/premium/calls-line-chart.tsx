@@ -1,13 +1,7 @@
-﻿"use client";
+"use client";
 
-import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 
 type MetricItem = {
   date: string;
@@ -15,17 +9,62 @@ type MetricItem = {
 };
 
 export function CallsLineChart({ data }: { data: MetricItem[] }) {
-  const normalized = data.map((item) => ({
-    label: new Date(item.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }),
-    value: item.inboundCalls,
-  }));
+  const normalized = useMemo(
+    () =>
+      data.map((item) => ({
+        label: new Date(item.date).toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+        }),
+        value: item.inboundCalls,
+      })),
+    [data],
+  );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = (width: number, height: number) => {
+      const safeWidth = Math.max(Math.round(width), 240);
+      const safeHeight = Math.max(Math.round(height), 192);
+      setSize((current) =>
+        current.width === safeWidth && current.height === safeHeight
+          ? current
+          : { width: safeWidth, height: safeHeight },
+      );
+    };
+
+    updateSize(container.clientWidth, container.clientHeight);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      updateSize(entry.contentRect.width, entry.contentRect.height);
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="h-48 w-full min-w-0">
-      <ResponsiveContainer width="100%" height="100%" minWidth={240} minHeight={192} debounce={80}>
-        <LineChart data={normalized}>
-          <XAxis dataKey="label" tick={{ fill: "#A7A296", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#A7A296", fontSize: 11 }} axisLine={false} tickLine={false} width={28} />
+    <div ref={containerRef} className="h-48 w-full min-w-0">
+      {size.width > 0 && size.height > 0 ? (
+        <LineChart width={size.width} height={size.height} data={normalized}>
+          <XAxis
+            dataKey="label"
+            tick={{ fill: "#A7A296", fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fill: "#A7A296", fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={28}
+          />
           <Tooltip
             cursor={{ stroke: "rgba(229,199,107,0.2)" }}
             contentStyle={{
@@ -44,7 +83,7 @@ export function CallsLineChart({ data }: { data: MetricItem[] }) {
             activeDot={{ r: 4, fill: "#F8EBC1" }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      ) : null}
     </div>
   );
 }

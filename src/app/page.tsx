@@ -503,6 +503,7 @@ export default function HomePage() {
   );
 
   const primaryLabel = isAuthenticated ? t("Ir al Dashboard", "Go to Dashboard") : t("Crear Cuenta", "Create Account");
+  const primaryLabelCompact = isAuthenticated ? t("Dashboard", "Dashboard") : t("Crear", "Create");
 
   useEffect(() => {
     if (renderedTestimonialsCount >= testimonials.length) return;
@@ -650,14 +651,17 @@ export default function HomePage() {
       <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:44px_44px]" />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-24 md:px-8 md:pt-6">
-        <header className="fixed inset-x-0 top-0 z-50 px-5 pt-3 md:sticky md:top-4 md:px-0 md:pt-0">
-          <nav className="mx-auto flex w-full max-w-7xl items-center justify-between rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:px-6 md:py-3">
-            <Link href="/" className="inline-flex items-center gap-3">
+        <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 md:sticky md:top-4 md:px-0 md:pt-0">
+          <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:flex-nowrap md:justify-between md:px-6 md:py-3">
+            <Link href="/" className="inline-flex min-w-0 items-center gap-2.5">
               <BrandMark className="h-8 w-8" />
               <span className="text-sm font-semibold tracking-wide text-white/95 md:text-base">
                 AI Call Closer
               </span>
             </Link>
+            <div className="ml-auto md:hidden">
+              <LanguageToggle compact />
+            </div>
 
             <div className="hidden items-center gap-8 md:flex">
               {navItems.map((item) => (
@@ -671,20 +675,28 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <LanguageToggle compact />
+            <div className="flex w-full items-center gap-2 md:w-auto md:justify-end">
+              <div className="hidden md:block">
+                <LanguageToggle compact />
+              </div>
               <Button
                 asChild
                 variant="ghost"
-                className="h-9 border border-white/10 bg-white/[0.02] px-3 text-xs text-white/80 hover:bg-white/[0.07] hover:text-white sm:text-sm"
+                className="h-9 w-full min-w-0 flex-1 border border-white/10 bg-white/[0.02] px-3 text-xs text-white/80 hover:bg-white/[0.07] hover:text-white sm:w-auto sm:flex-none sm:text-sm"
               >
-                <Link href="/sign-in">{t("Iniciar sesion", "Sign in")}</Link>
+                <Link href="/sign-in" className="truncate text-center">
+                  <span className="sm:hidden">{t("Entrar", "Sign in")}</span>
+                  <span className="hidden sm:inline">{t("Iniciar sesion", "Sign in")}</span>
+                </Link>
               </Button>
               <Button
                 asChild
-                className="h-9 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white shadow-[0_0_32px_rgba(86,92,255,0.45)] transition-transform hover:scale-[1.02] sm:text-sm"
+                className="h-9 w-full min-w-0 flex-1 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white shadow-[0_0_32px_rgba(86,92,255,0.45)] transition-transform hover:scale-[1.02] sm:w-auto sm:flex-none sm:text-sm"
               >
-                <Link href={primaryHref}>{primaryLabel}</Link>
+                <Link href={primaryHref} className="truncate text-center">
+                  <span className="sm:hidden">{primaryLabelCompact}</span>
+                  <span className="hidden sm:inline">{primaryLabel}</span>
+                </Link>
               </Button>
             </div>
           </nav>

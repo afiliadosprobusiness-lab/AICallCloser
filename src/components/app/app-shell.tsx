@@ -74,7 +74,7 @@ export function AppShell(props: {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 overflow-x-clip p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
       <aside className="premium-glass gold-sheen hidden w-[280px] shrink-0 rounded-3xl p-5 md:flex md:flex-col">
         <div className="mb-6">
           <div className="mb-3 flex justify-end">
@@ -134,23 +134,25 @@ export function AppShell(props: {
       </aside>
 
       <main className="w-full min-w-0 flex-1">
-        <div className="premium-glass mb-4 flex items-center gap-3 rounded-2xl p-3 md:hidden">
-          <LanguageToggle compact />
-          <div className="flex-1">
-            {!props.isSuperAdmin ? (
+        <div className="premium-glass mb-4 space-y-2 rounded-2xl p-3 md:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <LanguageToggle compact />
+            <SignOutButton compact />
+          </div>
+          {!props.isSuperAdmin ? (
+            <div className="min-w-0">
               <WorkspaceSwitcher
                 workspaces={props.workspaces}
                 activeWorkspaceId={props.activeWorkspaceId}
               />
-            ) : null}
-          </div>
-          <SignOutButton />
+            </div>
+          ) : null}
         </div>
         {props.children}
       </main>
 
-      <nav className="premium-glass fixed inset-x-3 bottom-3 z-40 rounded-2xl p-2 md:hidden">
-        <ul className={cn("grid gap-2", items.length === 1 ? "grid-cols-1" : "grid-cols-5")}>
+      <nav className="premium-glass fixed inset-x-2 bottom-2 z-40 rounded-2xl p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] md:hidden sm:inset-x-3 sm:bottom-3 sm:p-2">
+        <ul className={cn("grid gap-1.5 sm:gap-2", items.length === 1 ? "grid-cols-1" : "grid-cols-5")}>
           {items.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -165,14 +167,14 @@ export function AppShell(props: {
                   onFocus={() => router.prefetch(item.href)}
                   onTouchStart={() => router.prefetch(item.href)}
                   className={cn(
-                    "flex min-h-11 flex-col items-center justify-center rounded-xl border text-[11px] leading-tight",
+                    "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-xl border px-1 text-[10px] leading-tight sm:text-[11px]",
                     active
                       ? "border-[#E5C76B]/50 bg-[#171717] text-[#F5F3EE]"
                       : "border-transparent text-[#B9B4A9]",
                   )}
                 >
                   <Icon className="mb-1 h-4 w-4" />
-                  {t(item.labelEs, item.labelEn)}
+                  <span className="truncate">{t(item.labelEs, item.labelEn)}</span>
                 </Link>
               </li>
             );

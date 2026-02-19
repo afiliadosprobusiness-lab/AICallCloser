@@ -116,6 +116,11 @@
 - A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
 - Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.
 - Testimonials rail now includes smooth autoplay, page indicators, and progressive lazy rendering/image loading for better mobile performance.
+- Mobile responsiveness hardening:
+  - Landing navbar now adapts to narrow devices (320px+) with two-row action layout and compact CTA labels.
+  - App shell mobile header now stacks controls (language/sign-out + workspace switcher) to avoid overflow.
+  - Bottom mobile navigation now uses tighter spacing, truncation-safe labels, and safe-area padding.
+  - Dashboard chart now measures container size with `ResizeObserver` before rendering to avoid `width(-1)/height(-1)` warnings and keep stable rendering on small screens.
 
 ## Call Objectives Engine
 - New persistence model:

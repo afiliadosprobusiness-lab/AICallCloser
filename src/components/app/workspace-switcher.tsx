@@ -49,7 +49,7 @@ export function WorkspaceSwitcher(props: {
 
   return (
     <Select value={value} onValueChange={onChange} disabled={isPending}>
-      <SelectTrigger className="h-10 rounded-xl border-[#E5C76B]/30 bg-[#121212]/80 text-[#F5F3EE]">
+      <SelectTrigger className="h-10 w-full min-w-0 rounded-xl border-[#E5C76B]/30 bg-[#121212]/80 text-[#F5F3EE]">
         <SelectValue placeholder={t("Selecciona workspace", "Select workspace")} />
       </SelectTrigger>
       <SelectContent className="border-[#E5C76B]/20 bg-[#141414] text-[#F5F3EE]">
