@@ -120,6 +120,9 @@
 - A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
 - Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.
 - Testimonials rail now includes smooth autoplay, page indicators, and progressive lazy rendering/image loading for better mobile performance.
+- Testimonials rail interaction is now axis-locked:
+  - desktop supports horizontal drag (mouse/trackpad) plus button controls.
+  - mobile touch interactions are constrained to horizontal (`pan-x`) inside the rail to avoid vertical testimonial movement.
 - Mobile responsiveness hardening:
   - Landing navbar now adapts to narrow devices (320px+) with two-row action layout and compact CTA labels.
   - App shell mobile header now stacks controls (language/sign-out + workspace switcher) to avoid overflow.

@@ -83,7 +83,13 @@ export default function HomePage() {
     return 9;
   });
   const [isTestimonialAutoplayPaused, setIsTestimonialAutoplayPaused] = useState(false);
+  const [isTestimonialsDragging, setIsTestimonialsDragging] = useState(false);
   const testimonialTrackRef = useRef<HTMLDivElement>(null);
+  const testimonialDragRef = useRef({
+    isDragging: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -593,6 +599,49 @@ export default function HomePage() {
     }
   }
 
+  function onTestimonialsPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    const track = testimonialTrackRef.current;
+    if (!track) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    setIsTestimonialAutoplayPaused(true);
+    const drag = testimonialDragRef.current;
+    drag.isDragging = true;
+    drag.startX = event.clientX;
+    drag.scrollLeft = track.scrollLeft;
+    setIsTestimonialsDragging(true);
+    track.setPointerCapture(event.pointerId);
+  }
+
+  function onTestimonialsPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const track = testimonialTrackRef.current;
+    if (!track || !testimonialDragRef.current.isDragging) return;
+
+    const deltaX = event.clientX - testimonialDragRef.current.startX;
+    track.scrollLeft = testimonialDragRef.current.scrollLeft - deltaX;
+  }
+
+  function onTestimonialsPointerEnd(event: React.PointerEvent<HTMLDivElement>) {
+    const track = testimonialTrackRef.current;
+    if (!track) return;
+
+    testimonialDragRef.current.isDragging = false;
+    setIsTestimonialsDragging(false);
+
+    if (track.hasPointerCapture(event.pointerId)) {
+      track.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function onTestimonialsWheel(event: React.WheelEvent<HTMLDivElement>) {
+    const track = event.currentTarget;
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+
+    track.scrollLeft += event.deltaY;
+    setIsTestimonialAutoplayPaused(true);
+    event.preventDefault();
+  }
+
   useEffect(() => {
     if (isTestimonialAutoplayPaused || testimonialPageCount <= 1) {
       return;
@@ -1001,15 +1050,21 @@ export default function HomePage() {
 
           <div
             ref={testimonialTrackRef}
-            className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className={cn(
+              "mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-y-contain pb-3 pt-2 select-none [scrollbar-width:none] [touch-action:pan-x] [&::-webkit-scrollbar]:hidden",
+              isTestimonialsDragging ? "cursor-grabbing" : "cursor-grab",
+            )}
             onScroll={onTestimonialsScroll}
+            onPointerDown={onTestimonialsPointerDown}
+            onPointerMove={onTestimonialsPointerMove}
+            onPointerUp={onTestimonialsPointerEnd}
+            onPointerCancel={onTestimonialsPointerEnd}
+            onPointerLeave={onTestimonialsPointerEnd}
+            onWheel={onTestimonialsWheel}
             onMouseEnter={() => setIsTestimonialAutoplayPaused(true)}
             onMouseLeave={() => setIsTestimonialAutoplayPaused(false)}
             onTouchStart={() => setIsTestimonialAutoplayPaused(true)}
             onTouchEnd={() => setIsTestimonialAutoplayPaused(false)}
-            onPointerDown={() => setIsTestimonialAutoplayPaused(true)}
-            onPointerUp={() => setIsTestimonialAutoplayPaused(false)}
-            onPointerCancel={() => setIsTestimonialAutoplayPaused(false)}
           >
             {visibleTestimonials.map((item, index) => (
               <motion.div
