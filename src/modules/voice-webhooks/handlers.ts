@@ -3,6 +3,7 @@
 import { generateAssistantDecision } from "@/lib/ai/orchestrator";
 import { deserializePreferences, buildCallObjectivePlaybook, applyReplyCompliance, resolveObjectiveDecision, executeObjectiveSuccess } from "@/modules/call-objectives/service";
 import { syncBridgeLeadStatusByCallSid } from "@/modules/bridge/service";
+import { syncLeadHandoffStatusByCallSid } from "@/modules/leads-handoff/service";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { verifyPlivoSignature } from "@/lib/plivo/security";
@@ -602,6 +603,7 @@ export async function handleStatusVoiceWebhook(provider: VoiceProvider, request:
     });
 
     await syncBridgeLeadStatusByCallSid({ callSid, status });
+    await syncLeadHandoffStatusByCallSid({ callSid, status });
 
     return new Response("ok", { status: 200 });
   } catch (error) {

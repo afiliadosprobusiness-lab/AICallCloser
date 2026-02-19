@@ -217,6 +217,31 @@ Nueva sección en `Settings -> Puente` para importar leads y lanzar llamadas out
    - `/api/twilio/voice/status`
 6. Confirmar que la apertura usa el `welcomeMessage` del agente y el objetivo del lead importado.
 
+## Leads Widget Handoff API
+
+Endpoint de producción para recibir handoff desde `leads.widget`:
+
+- `POST /api/leads/handoff`
+- Auth: `Authorization: Bearer <IACLOSER_API_KEY>`
+
+Respuesta exitosa:
+
+```json
+{
+  "success": true,
+  "lead_id": "cma123...",
+  "redirect_url": "https://tuapp.com/session/cma123...",
+  "eta_seconds": 60
+}
+```
+
+Variables requeridas:
+
+```bash
+IACLOSER_API_KEY="..."
+PUBLIC_APP_URL="https://ai-call-closer-saas.vercel.app"
+```
+
 ## Flujo MVP implementado
 
 - Auth + workspaces multi-tenant

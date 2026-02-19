@@ -1,0 +1,172 @@
+import { randomUUID, timingSafeEqual } from "node:crypto";
+
+import type { LeadsWidgetHandoffPayload } from "@/modules/leads-handoff/schema";
+import { leadsWidgetHandoffSchema } from "@/modules/leads-handoff/schema";
+import {
+  createLeadHandoffRecord,
+  enqueueLeadHandoffCall,
+  summarizeHistoryForLog,
+} from "@/modules/leads-handoff/service";
+import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
+
+function normalizeBearerToken(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const [scheme, token] = value.split(" ");
+  if (!scheme || !token || scheme.toLowerCase() !== "bearer") {
+    return null;
+  }
+
+  return token.trim();
+}
+
+function secureTokenCompare(expected: string, received: string) {
+  const expectedBuffer = Buffer.from(expected, "utf8");
+  const receivedBuffer = Buffer.from(received, "utf8");
+
+  if (expectedBuffer.length !== receivedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+function toJson(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+function parseValidationError(error: string) {
+  return toJson({ error }, 400);
+}
+
+export type LeadHandoffEndpointDeps = {
+  apiKey?: string;
+  publicAppUrl: string;
+  generateRequestId: () => string;
+  persist: (params: { payload: LeadsWidgetHandoffPayload; receivedAt: Date }) => Promise<{
+    id: string;
+    workspaceId: string;
+    agentId: string;
+    leadPhoneE164: string;
+    status: "queued" | "calling" | "completed" | "failed";
+  }>;
+  enqueue: (params: {
+    handoffId: string;
+    workspaceId: string;
+    agentId: string;
+    toNumber: string;
+    request: Request;
+  }) => Promise<void>;
+  logger: {
+    info: (obj: Record<string, unknown>, msg?: string) => void;
+    warn: (obj: Record<string, unknown>, msg?: string) => void;
+    error: (obj: Record<string, unknown>, msg?: string) => void;
+  };
+};
+
+export const defaultLeadHandoffDeps: LeadHandoffEndpointDeps = {
+  apiKey: env.IACLOSER_API_KEY,
+  publicAppUrl: env.PUBLIC_APP_URL ?? env.APP_URL,
+  generateRequestId: () => randomUUID(),
+  persist: (params) => createLeadHandoffRecord(params),
+  enqueue: enqueueLeadHandoffCall,
+  logger,
+};
+
+export async function handleLeadsWidgetHandoff(
+  request: Request,
+  deps: LeadHandoffEndpointDeps = defaultLeadHandoffDeps,
+) {
+  const requestId = deps.generateRequestId();
+
+  try {
+    const token = normalizeBearerToken(request.headers.get("authorization"));
+    if (!deps.apiKey || !token || !secureTokenCompare(deps.apiKey, token)) {
+      return toJson({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await request.json().catch(() => null);
+    const parsed = leadsWidgetHandoffSchema.safeParse(body);
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]?.message ?? "Invalid payload";
+      return parseValidationError(firstError);
+    }
+
+    if (!parsed.data.consent.accepted) {
+      return parseValidationError("Consent must be accepted.");
+    }
+
+    const receivedAt = new Date();
+    const created = await deps.persist({ payload: parsed.data, receivedAt });
+
+    void deps
+      .enqueue({
+        handoffId: created.id,
+        workspaceId: created.workspaceId,
+        agentId: created.agentId,
+        toNumber: created.leadPhoneE164,
+        request,
+      })
+      .catch((error) => {
+        deps.logger.warn(
+          {
+            requestId,
+            handoffId: created.id,
+            error: error instanceof Error ? error.message : "enqueue_failed",
+          },
+          "failed to enqueue lead handoff call",
+        );
+      });
+
+    deps.logger.info(
+      {
+        requestId,
+        product: parsed.data.source.product,
+        widget_id: parsed.data.source.widget_id,
+        lead_chat_slug: parsed.data.source.lead_chat_slug,
+        lead_name: parsed.data.lead.name,
+        history_summary: summarizeHistoryForLog(parsed.data.history),
+      },
+      "lead handoff received",
+    );
+
+    const redirectUrl = `${deps.publicAppUrl.replace(/\/+$/, "")}/session/${created.id}`;
+    return toJson(
+      {
+        success: true,
+        lead_id: created.id,
+        redirect_url: redirectUrl,
+        eta_seconds: 60,
+      },
+      200,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+
+    if (message === "INVALID_PHONE") {
+      return parseValidationError("lead.phone is not a valid phone.");
+    }
+
+    if (message === "WORKSPACE_NOT_FOUND") {
+      return parseValidationError("Unknown lead_chat_slug.");
+    }
+
+    deps.logger.error(
+      {
+        requestId,
+        error: message,
+      },
+      "lead handoff endpoint failed",
+    );
+
+    return toJson({ error: "Internal server error" }, 500);
+  }
+}

@@ -67,6 +67,14 @@
 - Twilio outbound TwiML now consumes optional `leadId` to inject lead-aware playbook context (objective, collected info, preferred times) while preserving dashboard agent config and guardrails.
 - Voice status webhook updates both standard call records and `BridgeLead` status by `CallSid`.
 
+## Leads Widget Handoff Endpoint
+- New authenticated production endpoint: `POST /api/leads/handoff`.
+- Authorization is validated with bearer token against `IACLOSER_API_KEY`.
+- Payload is validated with strict Zod schema (`source`, `lead`, `consent`, optional bounded `history`).
+- On success, server stores full handoff payload in `LeadHandoff` with `receivedAt` and `status=queued`.
+- Outbound call trigger is queued asynchronously (non-blocking response) and status is synchronized by `CallSid` via voice status webhook.
+- Redirect contract: `redirect_url = ${PUBLIC_APP_URL}/session/<lead_id>`.
+
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.
 - Telephony number form now shows explicit success/error state after submit.

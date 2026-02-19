@@ -15,6 +15,8 @@ const envSchema = z.object({
   AUTH_TRUST_HOST: emptyToUndefined(z.string().optional()),
   APP_URL: z.string().url().default("http://localhost:3000"),
   BASE_URL: emptyToUndefined(z.string().url().optional()),
+  PUBLIC_APP_URL: emptyToUndefined(z.string().url().optional()),
+  IACLOSER_API_KEY: emptyToUndefined(z.string().min(8).optional()),
   FIREBASE_WEB_API_KEY: emptyToUndefined(z.string().optional()),
   NEXT_PUBLIC_FIREBASE_API_KEY: emptyToUndefined(z.string().optional()),
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: emptyToUndefined(z.string().optional()),

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { buildCallObjectivePlaybook, deserializePreferences } from "@/modules/call-objectives/service";
 import { loadBridgeLeadContext } from "@/modules/bridge/service";
+import { loadLeadHandoffContext } from "@/modules/leads-handoff/service";
 import { appendTranscriptTurn, createInboundCall } from "@/modules/calls/service";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -193,7 +194,12 @@ export async function createTwilioOutboundCall(input: OutboundCreateInput) {
 
   const baseUrl = input.requestBaseUrl ?? getBaseUrl();
   const statusCallbackUrl = `${baseUrl}/api/twilio/voice/status`;
-  const runtime = await resolveRuntimeConfig({ agentId: agentConfig.id, workspaceId: null, leadId: null });
+  const runtime = await resolveRuntimeConfig({
+    agentId: agentConfig.id,
+    workspaceId: null,
+    leadId: null,
+    handoffId: null,
+  });
 
   if (!runtime) {
     return {
@@ -305,6 +311,7 @@ async function resolveRuntimeConfig(params: {
   agentId: string | null;
   workspaceId: string | null;
   leadId?: string | null;
+  handoffId?: string | null;
 }) {
   const agentConfig = params.agentId
     ? await db.agentConfig.findUnique({
@@ -352,7 +359,7 @@ async function resolveRuntimeConfig(params: {
     return null;
   }
 
-  const [rawPreferences, businessProfile, bridgeLeadContext] = await Promise.all([
+  const [rawPreferences, businessProfile, bridgeLeadContext, leadHandoffContext] = await Promise.all([
     db.agentCallPreferences.findUnique({ where: { workspaceId: agentConfig.workspaceId } }).catch(() => null),
     db.businessProfile
       .findUnique({
@@ -362,6 +369,10 @@ async function resolveRuntimeConfig(params: {
       .catch(() => null),
     loadBridgeLeadContext({
       leadId: params.leadId ?? null,
+      workspaceId: agentConfig.workspaceId,
+    }),
+    loadLeadHandoffContext({
+      handoffId: params.handoffId ?? null,
       workspaceId: agentConfig.workspaceId,
     }),
   ]);
@@ -385,7 +396,7 @@ async function resolveRuntimeConfig(params: {
     preferences,
     playbook,
     valueProp: businessProfile?.valueProp ?? "",
-    bridgeLeadContext,
+    bridgeLeadContext: leadHandoffContext ?? bridgeLeadContext,
   };
 }
 
@@ -430,12 +441,13 @@ export async function handleTwilioOutboundTwiml(request: Request) {
 
   const agentId = url.searchParams.get("agentId") ?? params.agentId ?? null;
   const leadId = url.searchParams.get("leadId") ?? params.leadId ?? null;
+  const handoffId = url.searchParams.get("handoffId") ?? params.handoffId ?? null;
   const workspaceId = url.searchParams.get("workspaceId") ?? params.workspaceId ?? null;
   const callSid = params.CallSid ?? "";
   const fromNumber = params.From ?? "";
   const toNumber = params.To ?? "";
 
-  const runtime = await resolveRuntimeConfig({ agentId, workspaceId, leadId });
+  const runtime = await resolveRuntimeConfig({ agentId, workspaceId, leadId, handoffId });
   if (!runtime) {
     return xmlResponse(
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Say>No AI agent is configured for this outbound call.</Say><Hangup/></Response>",
@@ -491,6 +503,7 @@ export async function handleTwilioOutboundTwiml(request: Request) {
       callSid,
       opening: resolvedOpening,
       leadId: runtime.bridgeLeadContext?.id,
+      handoffId,
       bridgeObjective: runtime.bridgeLeadContext?.objective,
       objective: runtime.preferences.primaryObjective,
       secondaryObjectives: runtime.preferences.secondaryObjectives,
