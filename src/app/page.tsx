@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -79,13 +79,7 @@ export default function HomePage() {
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
   const [testimonialPageCount, setTestimonialPageCount] = useState(1);
-  const [renderedTestimonialsCount, setRenderedTestimonialsCount] = useState(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 640) {
-      return 6;
-    }
-
-    return 9;
-  });
+  const [renderedTestimonialsCount, setRenderedTestimonialsCount] = useState(9);
   const [isTestimonialAutoplayPaused, setIsTestimonialAutoplayPaused] = useState(false);
   const [isTestimonialsDragging, setIsTestimonialsDragging] = useState(false);
   const testimonialTrackRef = useRef<HTMLDivElement>(null);
@@ -792,7 +786,7 @@ export default function HomePage() {
     // TODO: connect Lead Chat widget with public handoff endpoint.
   }
 
-  function onLeadChatLiveDataChange(payload: LeadChatLiveDemoData) {
+  const onLeadChatLiveDataChange = useCallback((payload: LeadChatLiveDemoData) => {
     setLiveDemoRuntime((prev) => {
       const leadName = payload.name || prev?.leadName || liveDemoPrefill?.leadName || "";
       const business = payload.business || prev?.business || "";
@@ -803,15 +797,25 @@ export default function HomePage() {
           ? `Hi, I am ${leadName || "there"}. I run ${business || "a business"} and want ${goal || "more customers"}.`
           : `Hola, soy ${leadName || "cliente"}. Tengo ${business || "un negocio"} y quiero ${goal || "mas clientes"}.`;
 
-      return {
+      const nextValue = {
         leadName,
         business,
         phone,
         goal,
         openingMessage,
       };
+      if (
+        prev?.leadName === nextValue.leadName &&
+        prev?.business === nextValue.business &&
+        prev?.phone === nextValue.phone &&
+        prev?.goal === nextValue.goal &&
+        prev?.openingMessage === nextValue.openingMessage
+      ) {
+        return prev;
+      }
+      return nextValue;
     });
-  }
+  }, [liveDemoPrefill?.leadName, locale]);
 
   function onLeadChatCompleted() {
     scheduleLeadChatAutoClose();
