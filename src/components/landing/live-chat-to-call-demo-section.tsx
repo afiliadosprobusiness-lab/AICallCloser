@@ -304,6 +304,7 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
   const [callUserReply, setCallUserReply] = useState("");
   const [callUserCloseReply, setCallUserCloseReply] = useState("");
   const timeoutsRef = useRef<number[]>([]);
+  const callPanelRef = useRef<HTMLDivElement | null>(null);
 
   const leftChatMessages = useMemo(() => {
     const clone = copy.chat.map((message) => ({ ...message }));
@@ -445,6 +446,19 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     timeoutsRef.current = [];
   };
 
+  const scrollToCallPanelOnMobile = () => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    if (!callPanelRef.current) return;
+
+    const top = callPanelRef.current.getBoundingClientRect().top + window.scrollY - 84;
+
+    window.scrollTo({
+      top: Math.max(top, 0),
+      behavior: "smooth",
+    });
+  };
+
   useEffect(() => {
     if (leftVisibleCount >= leftChatMessages.length) return;
     const timer = window.setTimeout(() => {
@@ -486,6 +500,11 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
 
     void props.onSubmitLead?.(payload);
     void props.onStartDemoCall?.(payload);
+
+    const scrollTimeout = window.setTimeout(() => {
+      scrollToCallPanelOnMobile();
+    }, 1500);
+    timeoutsRef.current.push(scrollTimeout);
 
     const timeline: Array<{ delay: number; stage: DemoStage; count: number }> = [
       { delay: 1000, stage: "consent_received", count: 1 },
@@ -577,7 +596,11 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-white/12 bg-white/[0.02] p-4 sm:p-5">
+            <div
+              id="live-call-reaction"
+              ref={callPanelRef}
+              className="rounded-2xl border border-white/12 bg-white/[0.02] p-4 sm:p-5"
+            >
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-xs uppercase tracking-[0.14em] text-white/55">{copy.leftHeader}</p>
                 <span className="rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-1 text-[11px] text-white/65">
