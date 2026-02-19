@@ -109,7 +109,7 @@ const COPY: Record<
     consentRequired: "I agree to receive an automated AI call for this demo.",
     consentOptional: "I agree to receive follow-up automated messages.",
     consentLegal: "You can opt out anytime. We respect your privacy.",
-    microcopy: "Free live demo | <2 min | No card",
+    microcopy: "⚡ Free live demo • ⏱ <2 min • 🔒 No card",
     urgency: "Live demos running now",
     submitStep1: "Continue",
     submitStep2: "Continue",
@@ -145,7 +145,7 @@ const COPY: Record<
     consentRequired: "Acepto recibir una llamada automatica por IA para esta demo.",
     consentOptional: "Acepto recibir mensajes automaticos de seguimiento.",
     consentLegal: "Puedes pedir que pare en cualquier momento. Respetamos tu privacidad.",
-    microcopy: "Demo gratis | <2 min | Sin tarjeta",
+    microcopy: "⚡ Demo gratis • ⏱ <2 min • 🔒 Sin tarjeta",
     urgency: "Demos en vivo ejecutandose ahora",
     submitStep1: "Continuar",
     submitStep2: "Continuar",
@@ -493,6 +493,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
           <span>{copy.microcopy}</span>
           <span className="inline-flex items-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+            <span className="h-2 w-2 rounded-full bg-rose-400/85" aria-hidden />
             {copy.urgency}
           </span>
         </div>
