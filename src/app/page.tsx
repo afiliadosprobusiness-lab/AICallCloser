@@ -823,13 +823,13 @@ export default function HomePage() {
       <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:44px_44px]" />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-24 md:px-8 md:pt-6">
-        <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 md:sticky md:top-0 md:flex md:h-[72px] md:items-center md:px-0 md:pt-0">
+        <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 md:px-0 md:pt-0">
           <nav
             className={cn(
               "mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0F1527]/85 px-3 py-2.5 shadow-[0_10px_35px_rgba(7,10,22,0.55)] backdrop-blur-xl md:flex-nowrap md:justify-between md:px-6 md:transition-[height,background-color,border-color,box-shadow,backdrop-filter] md:duration-200 md:ease-out",
               isDesktopNavScrolled
                 ? "md:h-[60px] md:border-white/10 md:bg-[#0E1425]/82 md:shadow-[0_14px_40px_rgba(4,8,24,0.45)] md:backdrop-blur-xl"
-                : "md:h-[72px] md:border-white/0 md:bg-transparent md:shadow-none md:backdrop-blur-0",
+                : "md:h-[72px] md:border-white/12 md:bg-[#0B1020]/35 md:shadow-[0_6px_20px_rgba(4,8,24,0.25)] md:backdrop-blur-md",
             )}
           >
             <Link href="/" className="inline-flex min-w-0 items-center gap-2.5">
@@ -847,7 +847,7 @@ export default function HomePage() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm text-white/70 transition-colors hover:text-white"
+                  className="text-sm text-white/85 transition-colors hover:text-white"
                 >
                   {item.label}
                 </Link>
