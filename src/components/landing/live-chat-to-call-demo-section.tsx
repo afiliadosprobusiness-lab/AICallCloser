@@ -446,9 +446,8 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     timeoutsRef.current = [];
   };
 
-  const scrollToCallPanelOnMobile = () => {
+  const scrollToCallPanel = () => {
     if (typeof window === "undefined") return;
-    if (!window.matchMedia("(max-width: 1023px)").matches) return;
     if (!callPanelRef.current) return;
 
     const top = callPanelRef.current.getBoundingClientRect().top + window.scrollY - 84;
@@ -502,8 +501,8 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     void props.onStartDemoCall?.(payload);
 
     const scrollTimeout = window.setTimeout(() => {
-      scrollToCallPanelOnMobile();
-    }, 1500);
+      scrollToCallPanel();
+    }, 1000);
     timeoutsRef.current.push(scrollTimeout);
 
     const timeline: Array<{ delay: number; stage: DemoStage; count: number }> = [
