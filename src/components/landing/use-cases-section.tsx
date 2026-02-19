@@ -169,7 +169,7 @@ export function UseCasesSection(props: UseCasesSectionProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2 lg:grid-cols-4">
         {CARDS.map((card, index) => {
           const Icon = card.icon;
           return (
@@ -197,10 +197,10 @@ export function UseCasesSection(props: UseCasesSectionProps) {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="mt-4 h-10 w-full border border-white/15 bg-white/[0.03] text-xs text-white/85 transition-all duration-250 group-hover:border-[#7A92FF]/55 group-hover:bg-[#233667]/38 group-hover:text-white sm:text-sm"
+                    className="mt-4 h-auto min-h-10 w-full border border-white/15 bg-white/[0.03] px-2.5 py-2 text-[11px] leading-tight whitespace-normal text-white/85 transition-all duration-250 group-hover:border-[#7A92FF]/55 group-hover:bg-[#233667]/38 group-hover:text-white sm:text-sm"
                     onClick={() => handleSelect(card)}
                   >
-                    {locale === "en" ? card.ctaEn : card.ctaEs}
+                    <span className="block text-center">{locale === "en" ? card.ctaEn : card.ctaEs}</span>
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
