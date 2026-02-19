@@ -20,6 +20,7 @@ import {
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
+import { LiveChatToCallDemoSection } from "@/components/landing/live-chat-to-call-demo-section";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -96,44 +97,6 @@ export default function HomePage() {
       { href: "#producto", label: t("Producto", "Product") },
       { href: "#precios", label: t("Precios", "Pricing") },
       { href: "#seguridad", label: t("Seguridad", "Security") },
-    ],
-    [t],
-  );
-
-  const conversation = useMemo(
-    () => [
-      {
-        speaker: t("Cliente", "Customer"),
-        text: t(
-          "Hola, quiero info para vender 2 propiedades este mes.",
-          "Hi, I want details to sell 2 properties this month.",
-        ),
-        side: "left" as const,
-      },
-      {
-        speaker: "AI Call Closer",
-        text: t(
-          "Perfecto. Ya trabajas con un sistema de captacion de leads?",
-          "Perfect. Are you already using a lead capture system?",
-        ),
-        side: "right" as const,
-      },
-      {
-        speaker: t("Cliente", "Customer"),
-        text: t(
-          "Si, recibimos muchas llamadas y no alcanzamos a responder todo.",
-          "Yes, we receive many calls and cannot answer all of them.",
-        ),
-        side: "left" as const,
-      },
-      {
-        speaker: "AI Call Closer",
-        text: t(
-          "Te agendo una demo hoy 5:30 PM y te conecto con un closer senior.",
-          "I will schedule a demo today at 5:30 PM and connect you with a senior closer.",
-        ),
-        side: "right" as const,
-      },
     ],
     [t],
   );
@@ -739,61 +702,7 @@ export default function HomePage() {
           </motion.div>
         </section>
 
-        <section className="scroll-mt-28 px-1 pb-16">
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{ duration: 0.65 }}
-          >
-            <Card className="border-white/15 bg-gradient-to-b from-[#121A31] to-[#0E1427] shadow-[0_20px_80px_rgba(18,43,128,0.35)]">
-              <CardContent className="p-5 sm:p-7 md:p-8">
-                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/50">{t("Llamada en vivo", "Live call")}</p>
-                    <p className="text-sm text-white/80">{t("Pipeline de ventas activo", "Active sales pipeline")}</p>
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200">
-                    <motion.span
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                      className="h-2 w-2 rounded-full bg-emerald-300"
-                    />
-                    {t("Llamada en progreso", "Call in progress")}
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {conversation.map((item, index) => (
-                    <motion.div
-                      key={`${item.speaker}-${index}`}
-                      initial={{ opacity: 0, y: 12 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: index * 0.08, duration: 0.45 }}
-                      className={cn("flex", item.side === "right" ? "justify-end" : "justify-start")}
-                    >
-                      <div
-                        className={cn(
-                          "max-w-[92%] rounded-2xl border px-4 py-3 text-sm leading-relaxed sm:max-w-[78%]",
-                          item.side === "right"
-                            ? "border-[#597DFF]/50 bg-[#223368]/55"
-                            : "border-white/15 bg-[#121724]/70",
-                        )}
-                      >
-                        <p className="mb-1 text-[11px] uppercase tracking-[0.12em] text-white/50">
-                          {item.speaker}
-                        </p>
-                        <p className="text-white/88">{item.text}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </section>
+        <LiveChatToCallDemoSection />
 
         <section className="scroll-mt-28 px-1 pb-16">
           <motion.div

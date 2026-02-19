@@ -94,6 +94,12 @@
 - Root layout reads locale server-side and sets <html lang> accordingly.
 
 ## Landing UX Updates
+- New `LiveChatToCallDemoSection` (EN-first) added to landing product flow:
+  - two-column premium panel (`Live Chat` -> `AI Call Closer`)
+  - frontend-only animated state machine (no backend dependency)
+  - consent-required block (explicit AI call consent + optional follow-up consent)
+  - objective selector (`Book Google Meet`, `Schedule a call`, `Simulate a sale`) with dynamic final outcome copy
+  - integration-ready hooks: `onSubmitLead()` and `onStartDemoCall()`
 - Pricing section is followed by a horizontal testimonials rail (Instagram-style swipe/scroll) with real profile photos and 4-5 star ratings.
 - A horizontal FAQ rail (5 questions) was added below testimonials with animated expand/collapse answers.
 - Landing buttons now include a stronger deluxe hover/touch treatment (shadow + soft iridescent sweep) across all shadcn buttons.
