@@ -75,11 +75,11 @@ export function AppShell(props: {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 overflow-x-clip p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
+    <div className="app-shell-root mx-auto flex min-h-screen w-full max-w-[1440px] gap-4 overflow-x-clip p-3 pb-24 md:gap-6 md:p-6 md:pb-6">
       <aside className="premium-glass gold-sheen hidden w-[280px] shrink-0 rounded-3xl p-5 md:flex md:flex-col">
         <div className="mb-6">
-          <div className="mb-3 flex justify-end gap-2">
-            <ThemeToggle compact />
+          <div className="mb-4 grid grid-cols-[1fr_auto] gap-2">
+            <ThemeToggle />
             <LanguageToggle compact />
           </div>
           <div className="mb-2 flex items-center gap-3">
@@ -138,7 +138,7 @@ export function AppShell(props: {
       <main className="w-full min-w-0 flex-1">
         <div className="premium-glass mb-4 space-y-2 rounded-2xl p-3 md:hidden">
           <div className="flex flex-wrap items-center gap-2">
-            <ThemeToggle compact />
+            <ThemeToggle />
             <LanguageToggle compact />
             <div className="ml-auto">
               <SignOutButton compact />

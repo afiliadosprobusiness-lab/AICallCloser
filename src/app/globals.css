@@ -113,6 +113,21 @@
     filter: invert(1) hue-rotate(180deg);
   }
 
+  /*
+   * The app dashboard uses many premium overlays and blend modes.
+   * In light mode we cancel the global inversion inside AppShell to avoid
+   * contrast artifacts and keep a stable, ordered UI.
+   */
+  html.light #app-theme-root .app-shell-root {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  html.light #app-theme-root .app-shell-root img,
+  html.light #app-theme-root .app-shell-root video,
+  html.light #app-theme-root .app-shell-root canvas {
+    filter: none;
+  }
+
   ::selection {
     background: rgba(201, 162, 39, 0.35);
     color: #f7f5ef;
