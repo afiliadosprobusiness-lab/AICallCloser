@@ -80,7 +80,6 @@ export default function HomePage() {
   const [liveDemoRuntime, setLiveDemoRuntime] = useState<LiveDemoRuntimeContext | null>(null);
   const [hasCapturedLeadForDemo, setHasCapturedLeadForDemo] = useState(false);
   const [isDesktopNavScrolled, setIsDesktopNavScrolled] = useState(false);
-  const [isPricingInView, setIsPricingInView] = useState(false);
   const [hasPassedPricing, setHasPassedPricing] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
@@ -182,9 +181,7 @@ export default function HomePage() {
       rafId = 0;
       const rect = pricingSection.getBoundingClientRect();
       const viewportMid = Math.round(window.innerHeight * 0.46);
-      const nextInView = rect.top <= viewportMid && rect.bottom >= 120;
       const nextPassed = rect.bottom <= viewportMid;
-      setIsPricingInView((current) => (current === nextInView ? current : nextInView));
       setHasPassedPricing((current) => (current === nextPassed ? current : nextPassed));
     };
 
@@ -609,26 +606,20 @@ export default function HomePage() {
     ? "dashboard"
     : hasPassedPricing
       ? "live_demo"
-      : isPricingInView
-        ? "free_trial"
-        : "create_account";
+      : "free_trial";
   const primaryHref = menuCtaMode === "dashboard" ? "/dashboard" : "/register";
   const primaryLabel =
     menuCtaMode === "dashboard"
       ? t("Ir al Dashboard", "Go to Dashboard")
       : menuCtaMode === "free_trial"
         ? t("Iniciar prueba gratuita", "Start free trial")
-        : menuCtaMode === "live_demo"
-          ? t("Prueba la demostracion en vivo", "Try the live demo")
-          : t("Crear Cuenta", "Create Account");
+        : t("Prueba la demostracion en vivo", "Try the live demo");
   const primaryLabelCompact =
     menuCtaMode === "dashboard"
       ? t("Dashboard", "Dashboard")
       : menuCtaMode === "free_trial"
         ? t("Iniciar prueba gratuita", "Start free trial")
-        : menuCtaMode === "live_demo"
-          ? t("Prueba la demostracion en vivo", "Try the live demo")
-          : t("Crear Cuenta", "Create Account");
+        : t("Prueba la demostracion en vivo", "Try the live demo");
   const isLiveDemoPrimaryCta = menuCtaMode === "live_demo";
 
   useEffect(() => {
