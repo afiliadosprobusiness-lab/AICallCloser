@@ -822,6 +822,7 @@ export default function HomePage() {
       leadName: payload.leadChatPrefill.name,
       business: payload.leadChatPrefill.business,
       phone: payload.leadChatPrefill.phoneE164,
+      demoObjective: payload.leadChatPrefill.demoObjective,
       goal:
         payload.leadChatPrefill.goal === "appointments"
           ? t("agendar citas", "book appointments")
@@ -868,19 +869,21 @@ export default function HomePage() {
         phone,
         goal,
         openingMessage,
+        demoObjective: payload.demoObjective ?? prev?.demoObjective ?? liveDemoPrefill?.demoObjective,
       };
       if (
         prev?.leadName === nextValue.leadName &&
         prev?.business === nextValue.business &&
         prev?.phone === nextValue.phone &&
         prev?.goal === nextValue.goal &&
-        prev?.openingMessage === nextValue.openingMessage
+        prev?.openingMessage === nextValue.openingMessage &&
+        prev?.demoObjective === nextValue.demoObjective
       ) {
         return prev;
       }
       return nextValue;
     });
-  }, [liveDemoPrefill?.leadName, locale]);
+  }, [liveDemoPrefill?.demoObjective, liveDemoPrefill?.leadName, locale]);
 
   function onLeadChatCompleted() {
     setHasCapturedLeadForDemo(true);

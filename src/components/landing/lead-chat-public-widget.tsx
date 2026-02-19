@@ -32,7 +32,7 @@ export type LeadChatLiveDemoData = {
   demoObjective?: DemoObjective;
   consentCall: boolean;
   consentFollowUp: boolean;
-  step: 1 | 2 | 3 | 4;
+  step: 1 | 2 | 3 | 4 | 5;
   completed: boolean;
 };
 
@@ -62,6 +62,8 @@ const COPY: Record<
     prequalifying: string;
     start: string;
     goalButtons: Record<LeadChatGoal, string>;
+    objectivePrompt: string;
+    objectiveButtons: Record<DemoObjective, string>;
     askNameBiz: string;
     askPhoneConsent: string;
     nameLabel: string;
@@ -75,6 +77,7 @@ const COPY: Record<
     submitStep1: string;
     submitStep2: string;
     submitStep3: string;
+    submitStep4: string;
     finishMsg: string;
     invalidPhone: string;
     missingFields: string;
@@ -86,11 +89,17 @@ const COPY: Record<
   en: {
     header: "Lead Chat Public",
     prequalifying: "Pre-qualifying...",
-    start: "👋 Hi! I can get you a live AI call demo in under 2 minutes. What do you want to achieve?",
+    start: "Hi! I can launch a live AI call demo in under 2 minutes. What do you want to achieve?",
     goalButtons: {
-      appointments: "📅 Book appointments",
-      close_deals: "💰 Close deals",
-      pricing: "ℹ️ Pricing",
+      appointments: "Book appointments",
+      close_deals: "Close deals",
+      pricing: "Pricing",
+    },
+    objectivePrompt: "Great. What should the AI prioritize during this demo call?",
+    objectiveButtons: {
+      book_google_meet: "Book Google Meet",
+      schedule_call: "Schedule a call",
+      simulate_sale: "Simulate a sale",
     },
     askNameBiz: "Great choice. Please share your name and business type.",
     askPhoneConsent: "Perfect. Now share your phone with country code and accept consent to continue.",
@@ -100,12 +109,13 @@ const COPY: Record<
     consentRequired: "I agree to receive an automated AI call for this demo.",
     consentOptional: "I agree to receive follow-up automated messages.",
     consentLegal: "You can opt out anytime. We respect your privacy.",
-    microcopy: "⚡ Free live demo • ⏱ <2 min • 🔒 No card",
-    urgency: "🔴 Live demos running now",
+    microcopy: "Free live demo | <2 min | No card",
+    urgency: "Live demos running now",
     submitStep1: "Continue",
     submitStep2: "Continue",
-    submitStep3: "Start live demo call",
-    finishMsg: "All set! 🚀 We will call you in under 2 minutes.",
+    submitStep3: "Continue",
+    submitStep4: "Start live demo call",
+    finishMsg: "All set! We will call you in under 2 minutes.",
     invalidPhone: "Please enter a valid E.164 number, for example +13055550123.",
     missingFields: "Please complete all required fields.",
     missingConsent: "Consent is required to continue.",
@@ -115,11 +125,17 @@ const COPY: Record<
   es: {
     header: "Lead Chat Publico",
     prequalifying: "Precalificando...",
-    start: "👋 Hola! Te doy una demo real por llamada en menos de 2 minutos. Que quieres lograr?",
+    start: "Hola. Te doy una demo real por llamada en menos de 2 minutos. Que quieres lograr?",
     goalButtons: {
-      appointments: "📅 Agendar citas",
-      close_deals: "💰 Cerrar ventas",
-      pricing: "ℹ️ Ver precios",
+      appointments: "Agendar citas",
+      close_deals: "Cerrar ventas",
+      pricing: "Ver precios",
+    },
+    objectivePrompt: "Perfecto. Que debe priorizar la IA en esta llamada demo?",
+    objectiveButtons: {
+      book_google_meet: "Agendar Google Meet",
+      schedule_call: "Agendar llamada",
+      simulate_sale: "Simular cierre de venta",
     },
     askNameBiz: "Excelente. Comparte tu nombre y rubro de negocio.",
     askPhoneConsent: "Perfecto. Ahora deja tu numero con codigo de pais y acepta consentimiento para continuar.",
@@ -129,12 +145,13 @@ const COPY: Record<
     consentRequired: "Acepto recibir una llamada automatica por IA para esta demo.",
     consentOptional: "Acepto recibir mensajes automaticos de seguimiento.",
     consentLegal: "Puedes pedir que pare en cualquier momento. Respetamos tu privacidad.",
-    microcopy: "⚡ Demo gratis • ⏱ <2 min • 🔒 Sin tarjeta",
-    urgency: "🔴 Demos en vivo ejecutandose ahora",
+    microcopy: "Demo gratis | <2 min | Sin tarjeta",
+    urgency: "Demos en vivo ejecutandose ahora",
     submitStep1: "Continuar",
     submitStep2: "Continuar",
-    submitStep3: "Iniciar llamada demo",
-    finishMsg: "Listo! 🚀 Te llamaremos en menos de 2 minutos.",
+    submitStep3: "Continuar",
+    submitStep4: "Iniciar llamada demo",
+    finishMsg: "Listo! Te llamaremos en menos de 2 minutos.",
     invalidPhone: "Ingresa un numero E.164 valido, por ejemplo +13055550123.",
     missingFields: "Completa los campos requeridos.",
     missingConsent: "El consentimiento es obligatorio para continuar.",
@@ -153,8 +170,9 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
   const copy = COPY[language];
   const onLiveDataChange = props.onLiveDataChange;
   const prefillDemoObjective = props.prefillContext?.demoObjective;
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(props.prefillContext ? 2 : 1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(props.prefillContext?.goal ? 2 : 1);
   const [goal, setGoal] = useState<LeadChatGoal | null>(props.prefillContext?.goal ?? null);
+  const [demoObjective, setDemoObjective] = useState<DemoObjective | null>(prefillDemoObjective ?? null);
   const [name, setName] = useState(props.prefillContext?.name ?? "");
   const [business, setBusiness] = useState(props.prefillContext?.business ?? "");
   const [phone, setPhone] = useState(props.prefillContext?.phoneE164 ?? "");
@@ -170,44 +188,61 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
         : props.prefillContext.openingMessageEs;
 
   const bubbles = useMemo(() => {
-    const list: Array<{ role: "assistant" | "user"; text: string }> = [
-      { role: "assistant", text: startMessage },
-    ];
+    const list: Array<{ role: "assistant" | "user"; text: string }> = [{ role: "assistant", text: startMessage }];
 
     if (goal) {
       list.push({ role: "user", text: copy.goalButtons[goal] });
+      list.push({ role: "assistant", text: copy.objectivePrompt });
+    }
+
+    if (step >= 3 && demoObjective) {
+      list.push({ role: "user", text: copy.objectiveButtons[demoObjective] });
       list.push({ role: "assistant", text: copy.askNameBiz });
     }
 
-    if (step >= 3 && name.trim() && business.trim()) {
+    if (step >= 4 && name.trim() && business.trim()) {
       list.push({ role: "user", text: `${name.trim()} · ${business.trim()}` });
       list.push({ role: "assistant", text: copy.askPhoneConsent });
     }
 
-    if (step === 4) {
+    if (step === 5) {
       list.push({ role: "assistant", text: copy.finishMsg });
     }
 
     return list;
-  }, [business, copy.askNameBiz, copy.askPhoneConsent, copy.finishMsg, copy.goalButtons, goal, name, startMessage, step]);
+  }, [
+    business,
+    copy.askNameBiz,
+    copy.askPhoneConsent,
+    copy.finishMsg,
+    copy.goalButtons,
+    copy.objectiveButtons,
+    copy.objectivePrompt,
+    demoObjective,
+    goal,
+    name,
+    startMessage,
+    step,
+  ]);
 
   const liveData = useMemo<LeadChatLiveDemoData>(() => {
     const normalizedName = name.trim();
     const normalizedBusiness = business.trim();
     const normalizedPhone = phone.trim();
+
     return {
       goal,
       goalLabel: goal ? copy.goalButtons[goal] : "",
       name: normalizedName,
       business: normalizedBusiness,
       phoneE164: normalizedPhone,
-      demoObjective: prefillDemoObjective,
+      demoObjective: demoObjective ?? prefillDemoObjective,
       consentCall,
       consentFollowUp,
       step,
-      completed: step === 4,
+      completed: step === 5,
     };
-  }, [business, consentCall, consentFollowUp, copy.goalButtons, goal, name, phone, prefillDemoObjective, step]);
+  }, [business, consentCall, consentFollowUp, copy.goalButtons, demoObjective, goal, name, phone, prefillDemoObjective, step]);
 
   useEffect(() => {
     onLiveDataChange?.(liveData);
@@ -223,7 +258,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
   }
 
   function handleStep2() {
-    if (!name.trim() || !business.trim()) {
+    if (!demoObjective) {
       setError(copy.missingFields);
       return;
     }
@@ -232,6 +267,15 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
   }
 
   function handleStep3() {
+    if (!name.trim() || !business.trim()) {
+      setError(copy.missingFields);
+      return;
+    }
+    setError(null);
+    setStep(4);
+  }
+
+  function handleStep4() {
     if (!consentCall) {
       setError(copy.missingConsent);
       return;
@@ -240,10 +284,10 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
       setError(copy.invalidPhone);
       return;
     }
+    if (!goal) return;
 
     setError(null);
-    setStep(4);
-    if (!goal) return;
+    setStep(5);
 
     const payload: LeadChatPayload = {
       goal,
@@ -252,7 +296,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
       phoneE164: phone.trim(),
       consentCall: true,
       consentFollowUp,
-      demoObjective: props.prefillContext?.demoObjective,
+      demoObjective: demoObjective ?? props.prefillContext?.demoObjective,
     };
 
     void props.onSubmitLead?.(payload);
@@ -272,7 +316,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
           <p className="text-xs text-emerald-300">{copy.prequalifying}</p>
         </div>
         <span className="rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-1 text-[11px] text-white/70">
-          {step}/4
+          {step}/5
         </span>
       </div>
 
@@ -335,6 +379,37 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
 
         {step === 2 ? (
           <>
+            <p className="text-xs text-white/65">{copy.objectivePrompt}</p>
+            <div className="grid grid-cols-1 gap-2">
+              {(Object.keys(copy.objectiveButtons) as DemoObjective[]).map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setDemoObjective(value)}
+                  className={cn(
+                    "h-10 justify-start border text-xs",
+                    demoObjective === value
+                      ? "border-[#6F8BFF]/60 bg-[#253A71]/45 text-white"
+                      : "border-white/12 bg-white/[0.02] text-white/80 hover:bg-white/[0.08]",
+                  )}
+                >
+                  {copy.objectiveButtons[value]}
+                </Button>
+              ))}
+            </div>
+            <Button
+              type="button"
+              onClick={handleStep2}
+              className="h-10 w-full bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] text-white"
+            >
+              {copy.submitStep2}
+            </Button>
+          </>
+        ) : null}
+
+        {step === 3 ? (
+          <>
             <label className="space-y-1.5">
               <span className="text-xs text-white/65">{copy.nameLabel}</span>
               <Input
@@ -355,15 +430,15 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
             </label>
             <Button
               type="button"
-              onClick={handleStep2}
+              onClick={handleStep3}
               className="h-10 w-full bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] text-white"
             >
-              {copy.submitStep2}
+              {copy.submitStep3}
             </Button>
           </>
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <>
             <label className="space-y-1.5">
               <span className="text-xs text-white/65">{copy.phoneLabel}</span>
@@ -397,16 +472,16 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
 
             <Button
               type="button"
-              onClick={handleStep3}
+              onClick={handleStep4}
               className="h-10 w-full bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] text-white"
             >
               <Send className="mr-2 h-4 w-4" />
-              {copy.submitStep3}
+              {copy.submitStep4}
             </Button>
           </>
         ) : null}
 
-        {step === 4 ? (
+        {step === 5 ? (
           <div className="rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-3 py-2.5 text-sm text-emerald-200">
             {copy.finishMsg}
           </div>

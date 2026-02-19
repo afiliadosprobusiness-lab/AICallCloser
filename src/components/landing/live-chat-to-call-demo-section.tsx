@@ -39,6 +39,7 @@ export type LiveDemoRuntimeContext = {
   phone?: string;
   goal?: string;
   openingMessage?: string;
+  demoObjective?: DemoObjective;
 };
 
 type DemoStage = "chatting" | "awaiting_consent" | "consent_received" | "calling" | "on_call" | "outcome";
@@ -292,9 +293,8 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
         ? props.prefillContext.openingMessageEn
         : props.prefillContext.openingMessageEs;
 
-  const [objective, setObjective] = useState<DemoObjective>(
-    props.prefillContext?.demoObjective ?? "book_google_meet",
-  );
+  const objective: DemoObjective =
+    props.runtimeContext?.demoObjective ?? props.prefillContext?.demoObjective ?? "book_google_meet";
   const [consentCall, setConsentCall] = useState(false);
   const [consentFollowUp, setConsentFollowUp] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -534,44 +534,13 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
               {copy.eyebrow}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-              <div>
-                <h2 id="live-chat-demo-title" className="text-2xl font-semibold text-white sm:text-3xl">
-                  {copy.title}
-                </h2>
-                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-base">
-                  {copy.description}
-                </p>
-              </div>
-
-              <div className="w-full rounded-xl border border-white/12 bg-white/[0.02] p-3 md:w-[320px]">
-                <p className="text-xs uppercase tracking-[0.12em] text-white/55">{copy.objectiveLabel}</p>
-                <div className="mt-2 space-y-2">
-                  {(Object.keys(copy.objectives) as DemoObjective[]).map((value) => {
-                    const selected = objective === value;
-                    return (
-                      <label
-                        key={value}
-                        className={cn(
-                          "flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition",
-                          selected
-                            ? "border-[#6E89FF]/60 bg-[#243769]/45 text-white"
-                            : "border-white/12 bg-white/[0.02] text-white/75 hover:bg-white/[0.06]",
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="demo-objective"
-                          checked={selected}
-                          onChange={() => setObjective(value)}
-                          className="h-4 w-4 accent-[#7A91FF]"
-                        />
-                        <span>{copy.objectives[value]}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+            <div>
+              <h2 id="live-chat-demo-title" className="text-2xl font-semibold text-white sm:text-3xl">
+                {copy.title}
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-base">
+                {copy.description}
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
