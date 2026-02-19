@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -1539,6 +1540,11 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
+      <Script
+        id="leads-widget-script"
+        src="https://leads-widget.vercel.app/api/w/0oflzwpj2s.js"
+        strategy="afterInteractive"
+      />
     </div>
   );
 }
