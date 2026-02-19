@@ -752,9 +752,16 @@ export default function HomePage() {
 
   function onTestimonialsWheel(event: React.WheelEvent<HTMLDivElement>) {
     const track = event.currentTarget;
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    const horizontalDelta =
+      Math.abs(event.deltaX) > 0
+        ? event.deltaX
+        : event.shiftKey && Math.abs(event.deltaY) > 0
+          ? event.deltaY
+          : 0;
 
-    track.scrollLeft += event.deltaY;
+    if (horizontalDelta === 0) return;
+
+    track.scrollLeft += horizontalDelta;
     setIsTestimonialAutoplayPaused(true);
     event.preventDefault();
   }
@@ -1260,7 +1267,7 @@ export default function HomePage() {
           <div
             ref={testimonialTrackRef}
             className={cn(
-              "mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-y-contain pb-3 pt-2 select-none [scrollbar-width:none] [touch-action:pan-x] [&::-webkit-scrollbar]:hidden",
+              "mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 pt-2 select-none [scrollbar-width:none] [touch-action:pan-x] [&::-webkit-scrollbar]:hidden",
               isTestimonialsDragging ? "cursor-grabbing" : "cursor-grab",
             )}
             onScroll={onTestimonialsScroll}
