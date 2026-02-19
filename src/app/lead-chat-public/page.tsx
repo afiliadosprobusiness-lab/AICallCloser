@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { LeadChatPublicWidget } from "@/components/landing/lead-chat-public-widget";
 import { useLocale } from "@/components/providers/locale-provider";
 
@@ -19,7 +20,10 @@ export default function LeadChatPublicPage() {
             <BrandMark className="h-8 w-8" />
             <span className="text-sm font-semibold text-white/95 md:text-base">AI Call Closer</span>
           </Link>
-          <LanguageToggle compact />
+          <div className="flex items-center gap-2">
+            <ThemeToggle compact />
+            <LanguageToggle compact />
+          </div>
         </header>
 
         <div className="mb-6 text-center">

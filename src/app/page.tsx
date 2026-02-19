@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
 import {
   LeadChatLiveDemoData,
@@ -916,7 +917,8 @@ export default function HomePage() {
                 AI Call Closer
               </span>
             </Link>
-            <div className="ml-auto md:hidden">
+            <div className="ml-auto flex items-center gap-2 md:hidden">
+              <ThemeToggle compact />
               <LanguageToggle compact />
             </div>
 
@@ -933,7 +935,8 @@ export default function HomePage() {
             </div>
 
             <div className="flex w-full items-center gap-2 md:w-auto md:justify-end">
-              <div className="hidden md:block">
+              <div className="hidden items-center gap-2 md:flex">
+                <ThemeToggle compact />
                 <LanguageToggle compact />
               </div>
               <Button

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/config";
 
@@ -13,7 +14,8 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
     <div className="relative flex min-h-[100svh] items-start justify-center overflow-x-hidden overflow-y-auto overscroll-y-none px-3 py-4 sm:min-h-screen sm:items-center sm:p-4">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(229,199,107,0.16),transparent_34%),radial-gradient(circle_at_85%_0%,rgba(111,168,255,0.12),transparent_38%)]" />
       <div className="relative z-10 my-0 w-full max-w-md self-start rounded-3xl border border-[#E5C76B]/30 bg-[#111111]/80 p-6 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:my-0 sm:self-auto sm:p-8">
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end gap-2">
+          <ThemeToggle compact />
           <LanguageToggle compact />
         </div>
         <Link href="/" className="mb-6 block text-center">

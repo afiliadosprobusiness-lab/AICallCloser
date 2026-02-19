@@ -93,6 +93,12 @@
 - Locale is persisted in cookie `aicallcloser_locale` via `POST /api/preferences/locale`.
 - Root layout reads locale server-side and sets <html lang> accordingly.
 
+## Global Theme Mode
+- New global light/dark mode is available via `ThemeToggle` in landing, auth, lead-chat-public and app shell menus.
+- Theme is persisted in both cookie and local storage key `aicallcloser_theme` via `POST /api/preferences/theme`.
+- Root layout reads theme server-side and initializes `<html class="dark|light">` before hydration using an inline init script.
+- Light mode now applies platform-wide, including landing, dashboard modules, and embedded chat surfaces, without requiring per-page redeploys.
+
 ## Landing UX Updates
 - Hero was upgraded for US-focused conversion with EN/ES localized promise:
   - EN headline: `AI That Calls Your Leads in Under 2 Minutes.`

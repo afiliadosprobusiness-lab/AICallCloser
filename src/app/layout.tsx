@@ -3,7 +3,10 @@ import { Manrope, Playfair_Display } from "next/font/google";
 
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { FirebaseProvider } from "@/components/providers/firebase-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { getRequestLocale } from "@/lib/i18n/server";
+import { getThemeInitScript } from "@/lib/theme/init-script";
+import { getRequestTheme } from "@/lib/theme/server";
 
 import "./globals.css";
 
@@ -60,16 +63,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getRequestLocale();
+  const theme = await getRequestTheme();
+  const themeInitScript = getThemeInitScript();
 
   return (
-    <html lang={locale} className="dark notranslate" translate="no">
+    <html lang={locale} className={`${theme} notranslate`} translate="no" suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
+        <script id="theme-init-script" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${manrope.variable} ${playfair.variable} notranslate antialiased`} translate="no">
-        <LocaleProvider locale={locale}>
-          <FirebaseProvider>{children}</FirebaseProvider>
-        </LocaleProvider>
+        <ThemeProvider theme={theme}>
+          <LocaleProvider locale={locale}>
+            <FirebaseProvider>{children}</FirebaseProvider>
+          </LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
