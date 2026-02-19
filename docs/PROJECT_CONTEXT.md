@@ -104,6 +104,10 @@
   - consent-required block (explicit AI call consent + optional follow-up consent)
   - objective selector (`Book Google Meet`, `Schedule a call`, `Simulate a sale`) with dynamic outcome
   - integration-ready hooks: `onSubmitLead()` and `onStartDemoCall()`
+- New `UseCasesSection` added before live demo:
+  - 4 industry cards (`Roofing/Home Services`, `Dental Clinics`, `Legal Firms`, `Real Estate`)
+  - each card launches personalized demo flow (smooth scroll to live demo + auto-open lead chat modal)
+  - prefill context wiring now sets industry, goal, objective and industry-specific opening message in both demo panel and live chat widget.
 - New reusable `LeadChatPublicWidget` (3-step conversion funnel):
   - goal selection (`appointments`, `close deals`, `pricing`)
   - name + business capture

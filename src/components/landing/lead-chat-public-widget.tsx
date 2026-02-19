@@ -4,26 +4,40 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Send, ShieldCheck } from "lucide-react";
 
+import type { DemoObjective } from "@/components/landing/live-chat-to-call-demo-section";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 type LocaleKey = "en" | "es";
-type Goal = "appointments" | "close_deals" | "pricing";
+export type LeadChatGoal = "appointments" | "close_deals" | "pricing";
 
-type LeadChatPayload = {
-  goal: Goal;
+export type LeadChatPayload = {
+  goal: LeadChatGoal;
   name: string;
   business: string;
   phoneE164: string;
   consentCall: true;
   consentFollowUp: boolean;
+  demoObjective?: DemoObjective;
+};
+
+export type LeadChatPrefillContext = {
+  seed: string;
+  goal: LeadChatGoal;
+  demoObjective: DemoObjective;
+  name?: string;
+  business?: string;
+  phoneE164?: string;
+  openingMessageEn: string;
+  openingMessageEs: string;
 };
 
 type LeadChatPublicWidgetProps = {
   onSubmitLead?: (payload: LeadChatPayload) => void | Promise<void>;
   compact?: boolean;
+  prefillContext?: LeadChatPrefillContext | null;
 };
 
 const COPY: Record<
@@ -32,7 +46,7 @@ const COPY: Record<
     header: string;
     prequalifying: string;
     start: string;
-    goalButtons: Record<Goal, string>;
+    goalButtons: Record<LeadChatGoal, string>;
     askNameBiz: string;
     askPhoneConsent: string;
     nameLabel: string;
@@ -122,18 +136,25 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
   const { locale } = useLocale();
   const language: LocaleKey = locale === "en" ? "en" : "es";
   const copy = COPY[language];
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [goal, setGoal] = useState<Goal | null>(null);
-  const [name, setName] = useState("");
-  const [business, setBusiness] = useState("");
-  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(props.prefillContext ? 2 : 1);
+  const [goal, setGoal] = useState<LeadChatGoal | null>(props.prefillContext?.goal ?? null);
+  const [name, setName] = useState(props.prefillContext?.name ?? "");
+  const [business, setBusiness] = useState(props.prefillContext?.business ?? "");
+  const [phone, setPhone] = useState(props.prefillContext?.phoneE164 ?? "");
   const [consentCall, setConsentCall] = useState(false);
   const [consentFollowUp, setConsentFollowUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const startMessage =
+    props.prefillContext == null
+      ? copy.start
+      : language === "en"
+        ? props.prefillContext.openingMessageEn
+        : props.prefillContext.openingMessageEs;
+
   const bubbles = useMemo(() => {
     const list: Array<{ role: "assistant" | "user"; text: string }> = [
-      { role: "assistant", text: copy.start },
+      { role: "assistant", text: startMessage },
     ];
 
     if (goal) {
@@ -151,7 +172,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
     }
 
     return list;
-  }, [business, copy.askNameBiz, copy.askPhoneConsent, copy.finishMsg, copy.goalButtons, copy.start, goal, name, step]);
+  }, [business, copy.askNameBiz, copy.askPhoneConsent, copy.finishMsg, copy.goalButtons, goal, name, startMessage, step]);
 
   function handleStep1() {
     if (!goal) {
@@ -192,6 +213,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
       phoneE164: phone.trim(),
       consentCall: true,
       consentFollowUp,
+      demoObjective: props.prefillContext?.demoObjective,
     };
 
     void props.onSubmitLead?.(payload);
@@ -244,7 +266,7 @@ export function LeadChatPublicWidget(props: LeadChatPublicWidgetProps) {
         {step === 1 ? (
           <>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {(Object.keys(copy.goalButtons) as Goal[]).map((value) => (
+              {(Object.keys(copy.goalButtons) as LeadChatGoal[]).map((value) => (
                 <Button
                   key={value}
                   type="button"

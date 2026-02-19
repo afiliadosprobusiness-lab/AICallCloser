@@ -20,6 +20,19 @@ export type DemoLeadPayload = {
   consentFollowUp: boolean;
 };
 
+export type LiveDemoPrefillContext = {
+  seed: string;
+  leadName: string;
+  phone: string;
+  demoObjective: DemoObjective;
+  industryEn: string;
+  industryEs: string;
+  goalEn: string;
+  goalEs: string;
+  openingMessageEn: string;
+  openingMessageEs: string;
+};
+
 type DemoStage = "chatting" | "awaiting_consent" | "consent_received" | "calling" | "on_call" | "outcome";
 type LocaleKey = "en" | "es";
 
@@ -32,6 +45,7 @@ type LiveChatToCallDemoSectionProps = {
   onSubmitLead?: (payload: DemoLeadPayload) => void | Promise<void>;
   onStartDemoCall?: (payload: DemoLeadPayload) => void | Promise<void>;
   onOpenLeadChat?: () => void;
+  prefillContext?: LiveDemoPrefillContext | null;
 };
 
 const DEMO_LEAD = {
@@ -237,7 +251,34 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
   const { locale } = useLocale();
   const language: LocaleKey = locale === "en" ? "en" : "es";
   const copy = COPY[language];
-  const [objective, setObjective] = useState<DemoObjective>("book_google_meet");
+  const activeLeadName = props.prefillContext?.leadName ?? DEMO_LEAD.name;
+  const activePhone = props.prefillContext?.phone ?? DEMO_LEAD.phone;
+  const activeBusiness =
+    props.prefillContext == null
+      ? language === "en"
+        ? DEMO_LEAD.businessEn
+        : DEMO_LEAD.businessEs
+      : language === "en"
+        ? props.prefillContext.industryEn
+        : props.prefillContext.industryEs;
+  const activeGoal =
+    props.prefillContext == null
+      ? language === "en"
+        ? "more customers this month"
+        : "mas clientes este mes"
+      : language === "en"
+        ? props.prefillContext.goalEn
+        : props.prefillContext.goalEs;
+  const openingMessage =
+    props.prefillContext == null
+      ? copy.chat[0]?.text ?? ""
+      : language === "en"
+        ? props.prefillContext.openingMessageEn
+        : props.prefillContext.openingMessageEs;
+
+  const [objective, setObjective] = useState<DemoObjective>(
+    props.prefillContext?.demoObjective ?? "book_google_meet",
+  );
   const [consentCall, setConsentCall] = useState(false);
   const [consentFollowUp, setConsentFollowUp] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -246,15 +287,38 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
   const [stage, setStage] = useState<DemoStage>("chatting");
   const timeoutsRef = useRef<number[]>([]);
 
+  const leftChatMessages = useMemo(() => {
+    const clone = copy.chat.map((message) => ({ ...message }));
+    if (clone[0]) clone[0].text = openingMessage;
+    if (clone[4]) clone[4].text = activeBusiness;
+    if (clone[6]) clone[6].text = activePhone;
+    return clone;
+  }, [activeBusiness, activePhone, copy.chat, openingMessage]);
+
   const rightMessages = useMemo(() => {
+    const contextText =
+      language === "en"
+        ? `✅ Context received: ${activeLeadName} - ${activeBusiness}. Goal: ${activeGoal}.`
+        : `✅ Contexto recibido: ${activeLeadName} - ${activeBusiness}. Objetivo: ${activeGoal}.`;
+    const callingText =
+      language === "en" ? `📞 Calling ${activePhone}...` : `📞 Llamando a ${activePhone}...`;
+    const openingText =
+      language === "en"
+        ? `Hi ${activeLeadName}, this is Aurea, the AI assistant from our team. This will take less than 30 seconds 😊`
+        : `Hola ${activeLeadName}, soy Aurea, la asistente IA del equipo. Esto tomara menos de 30 segundos 😊`;
+    const qualifyText =
+      language === "en"
+        ? `I see you're in ${activeBusiness}. Are you looking to book more inspections or close jobs directly by phone?`
+        : `Veo que estas en ${activeBusiness}. Buscas agendar inspecciones o cerrar trabajos por telefono?`;
+
     return [
-      copy.rightMessages.context,
-      copy.rightMessages.calling,
-      copy.rightMessages.opening,
-      copy.rightMessages.qualify,
+      contextText,
+      callingText,
+      openingText,
+      qualifyText,
       copy.rightMessages.outcome[objective],
     ];
-  }, [copy.rightMessages, objective]);
+  }, [activeBusiness, activeGoal, activeLeadName, activePhone, copy.rightMessages.outcome, language, objective]);
 
   const statusSteps = useMemo(() => {
     return [
@@ -267,7 +331,7 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
   }, [copy.statuses, objective]);
 
   const effectiveStage: DemoStage =
-    stage === "chatting" && leftVisibleCount >= copy.chat.length ? "awaiting_consent" : stage;
+    stage === "chatting" && leftVisibleCount >= leftChatMessages.length ? "awaiting_consent" : stage;
 
   const activeStatusIndex = useMemo(() => {
     if (effectiveStage === "chatting" || effectiveStage === "awaiting_consent") return 0;
@@ -277,14 +341,21 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     return 4;
   }, [effectiveStage]);
 
+  const clearTimeline = () => {
+    for (const timeout of timeoutsRef.current) {
+      window.clearTimeout(timeout);
+    }
+    timeoutsRef.current = [];
+  };
+
   useEffect(() => {
-    if (leftVisibleCount >= copy.chat.length) return;
+    if (leftVisibleCount >= leftChatMessages.length) return;
     const timer = window.setTimeout(() => {
       setLeftVisibleCount((current) => current + 1);
     }, leftVisibleCount === 0 ? 280 : 820);
 
     return () => window.clearTimeout(timer);
-  }, [copy.chat.length, leftVisibleCount]);
+  }, [leftChatMessages.length, leftVisibleCount]);
 
   useEffect(() => {
     return () => {
@@ -295,13 +366,6 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     };
   }, []);
 
-  function clearTimeline() {
-    for (const timeout of timeoutsRef.current) {
-      window.clearTimeout(timeout);
-    }
-    timeoutsRef.current = [];
-  }
-
   function startSimulation() {
     if (!consentCall) {
       setConsentError(copy.consentValidation);
@@ -309,9 +373,9 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     }
 
     const payload: DemoLeadPayload = {
-      name: DEMO_LEAD.name,
-      business: language === "en" ? DEMO_LEAD.businessEn : DEMO_LEAD.businessEs,
-      phone: DEMO_LEAD.phone,
+      name: activeLeadName,
+      business: activeBusiness,
+      phone: activePhone,
       objective,
       consentCall: true,
       consentFollowUp,
@@ -421,7 +485,7 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
               </div>
 
               <div className="space-y-3">
-                {copy.chat.slice(0, leftVisibleCount).map((message, index) => (
+                {leftChatMessages.slice(0, leftVisibleCount).map((message, index) => (
                   <motion.div
                     key={`left-message-${index}`}
                     initial={{ opacity: 0, y: 10 }}
@@ -445,7 +509,7 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
                   </motion.div>
                 ))}
 
-                {leftVisibleCount < copy.chat.length ? (
+                {leftVisibleCount < leftChatMessages.length ? (
                   <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.03] px-3 py-2">
                     {[0, 1, 2].map((dot) => (
                       <motion.span
@@ -554,12 +618,12 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
                 <div className="rounded-xl border border-white/12 bg-white/[0.02] p-3">
                   <p className="text-[11px] uppercase tracking-[0.1em] text-white/48">{copy.leadSummary}</p>
                   <p className="mt-1 text-sm text-white/85">
-                    {DEMO_LEAD.name} · {language === "en" ? DEMO_LEAD.businessEn : DEMO_LEAD.businessEs}
+                    {activeLeadName} · {activeBusiness}
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/12 bg-white/[0.02] p-3">
                   <p className="text-[11px] uppercase tracking-[0.1em] text-white/48">{copy.dialTarget}</p>
-                  <p className="mt-1 text-sm text-white/85">{DEMO_LEAD.phone}</p>
+                  <p className="mt-1 text-sm text-white/85">{activePhone}</p>
                 </div>
               </div>
 

@@ -20,8 +20,17 @@ import {
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { LeadChatPublicWidget } from "@/components/landing/lead-chat-public-widget";
-import { DemoLeadPayload, LiveChatToCallDemoSection } from "@/components/landing/live-chat-to-call-demo-section";
+import {
+  LeadChatPayload,
+  LeadChatPublicWidget,
+  type LeadChatPrefillContext,
+} from "@/components/landing/lead-chat-public-widget";
+import {
+  DemoLeadPayload,
+  LiveChatToCallDemoSection,
+  type LiveDemoPrefillContext,
+} from "@/components/landing/live-chat-to-call-demo-section";
+import { UseCasesSection, type UseCaseSelectionPayload } from "@/components/landing/use-cases-section";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +70,8 @@ export default function HomePage() {
   const { t } = useLocale();
   const [session, setSession] = useState<SimpleSession | null>(null);
   const [isLeadChatModalOpen, setIsLeadChatModalOpen] = useState(false);
+  const [liveDemoPrefill, setLiveDemoPrefill] = useState<LiveDemoPrefillContext | null>(null);
+  const [leadChatPrefill, setLeadChatPrefill] = useState<LeadChatPrefillContext | null>(null);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
   const [testimonialPageCount, setTestimonialPageCount] = useState(1);
@@ -623,6 +634,12 @@ export default function HomePage() {
     }
   }
 
+  function onUseCaseSelect(payload: UseCaseSelectionPayload) {
+    setLiveDemoPrefill(payload.liveDemoPrefill);
+    setLeadChatPrefill(payload.leadChatPrefill);
+    scrollToLiveDemo(true);
+  }
+
   async function onSubmitDemoLead(payload: DemoLeadPayload) {
     void payload;
     // TODO: connect to backend lead capture endpoint.
@@ -633,14 +650,7 @@ export default function HomePage() {
     // TODO: connect to Twilio demo call trigger.
   }
 
-  async function onSubmitLeadChatWidget(payload: {
-    goal: "appointments" | "close_deals" | "pricing";
-    name: string;
-    business: string;
-    phoneE164: string;
-    consentCall: true;
-    consentFollowUp: boolean;
-  }) {
+  async function onSubmitLeadChatWidget(payload: LeadChatPayload) {
     void payload;
     // TODO: connect Lead Chat widget with public handoff endpoint.
   }
@@ -771,10 +781,14 @@ export default function HomePage() {
           </motion.div>
         </section>
 
+        <UseCasesSection onSelectUseCase={onUseCaseSelect} />
+
         <LiveChatToCallDemoSection
+          key={liveDemoPrefill?.seed ?? "live-demo-default"}
           onSubmitLead={onSubmitDemoLead}
           onStartDemoCall={onStartDemoCall}
           onOpenLeadChat={() => setIsLeadChatModalOpen(true)}
+          prefillContext={liveDemoPrefill}
         />
 
         <section className="scroll-mt-28 px-1 pb-16">
@@ -1213,7 +1227,12 @@ export default function HomePage() {
               </SheetDescription>
             </SheetHeader>
             <div className="h-full overflow-y-auto px-4 py-4 sm:px-5">
-              <LeadChatPublicWidget compact onSubmitLead={onSubmitLeadChatWidget} />
+              <LeadChatPublicWidget
+                key={leadChatPrefill?.seed ?? "lead-chat-default"}
+                compact
+                onSubmitLead={onSubmitLeadChatWidget}
+                prefillContext={leadChatPrefill}
+              />
             </div>
           </SheetContent>
         </Sheet>
