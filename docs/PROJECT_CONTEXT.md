@@ -71,9 +71,11 @@
 - New authenticated production endpoint: `POST /api/leads/handoff`.
 - Authorization is validated with bearer token against `IACLOSER_API_KEY`.
 - Payload is validated with strict Zod schema (`source`, `lead`, `consent`, optional bounded `history`).
+- Consent payload also accepts `explicit_response` (`SI|YES`) for leads.widget S2S compatibility.
 - On success, server stores full handoff payload in `LeadHandoff` with `receivedAt` and `status=queued`.
 - Outbound call trigger is queued asynchronously (non-blocking response) and status is synchronized by `CallSid` via voice status webhook.
 - Redirect contract: `redirect_url = ${PUBLIC_APP_URL}/session/<lead_id>`.
+- Success response includes canonical keys and aliases used by external clients (`lead_id/leadId/id`, `redirect_url/redirectUrl/landing_url`, `eta_seconds/etaSeconds/queuedCallInSeconds`).
 
 ## Forms and Validation UX
 - Agent configuration form blocks invalid `pricingRules` JSON and shows inline validation feedback.

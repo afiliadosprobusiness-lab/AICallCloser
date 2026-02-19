@@ -5,6 +5,12 @@ const isoDateSchema = z
   .datetime({ offset: true })
   .refine((value) => !Number.isNaN(Date.parse(value)), "Invalid ISO date");
 
+const explicitResponseSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .pipe(z.enum(["SI", "YES"]));
+
 export const handoffHistoryItemSchema = z
   .object({
     role: z.enum(["user", "assistant"]),
@@ -36,6 +42,7 @@ export const leadsWidgetHandoffSchema = z
         accepted_at: isoDateSchema,
         text_version: z.string().trim().min(1).max(40),
         text: z.string().trim().min(1).max(4000),
+        explicit_response: explicitResponseSchema.optional(),
         ip: z.string().trim().min(1).max(120),
         user_agent: z.string().trim().min(1).max(1000),
       })

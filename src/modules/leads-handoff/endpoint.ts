@@ -89,7 +89,36 @@ export async function handleLeadsWidgetHandoff(
 
   try {
     const token = normalizeBearerToken(request.headers.get("authorization"));
-    if (!deps.apiKey || !token || !secureTokenCompare(deps.apiKey, token)) {
+    if (!deps.apiKey) {
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "api_key_not_configured",
+        },
+        "lead handoff unauthorized",
+      );
+      return toJson({ error: "Unauthorized" }, 401);
+    }
+
+    if (!token) {
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "missing_or_malformed_bearer",
+        },
+        "lead handoff unauthorized",
+      );
+      return toJson({ error: "Unauthorized" }, 401);
+    }
+
+    if (!secureTokenCompare(deps.apiKey, token)) {
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "invalid_bearer",
+        },
+        "lead handoff unauthorized",
+      );
       return toJson({ error: "Unauthorized" }, 401);
     }
 
@@ -97,10 +126,26 @@ export async function handleLeadsWidgetHandoff(
     const parsed = leadsWidgetHandoffSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0]?.message ?? "Invalid payload";
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "payload_validation_failed",
+          issue_path: parsed.error.issues[0]?.path.join(".") ?? "unknown",
+          issue_code: parsed.error.issues[0]?.code ?? "unknown",
+        },
+        "lead handoff validation failed",
+      );
       return parseValidationError(firstError);
     }
 
     if (!parsed.data.consent.accepted) {
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "consent_not_accepted",
+        },
+        "lead handoff validation failed",
+      );
       return parseValidationError("Consent must be accepted.");
     }
 
@@ -118,7 +163,7 @@ export async function handleLeadsWidgetHandoff(
       .catch((error) => {
         deps.logger.warn(
           {
-            requestId,
+            request_id: requestId,
             handoffId: created.id,
             error: error instanceof Error ? error.message : "enqueue_failed",
           },
@@ -128,7 +173,7 @@ export async function handleLeadsWidgetHandoff(
 
     deps.logger.info(
       {
-        requestId,
+        request_id: requestId,
         product: parsed.data.source.product,
         widget_id: parsed.data.source.widget_id,
         lead_chat_slug: parsed.data.source.lead_chat_slug,
@@ -143,8 +188,14 @@ export async function handleLeadsWidgetHandoff(
       {
         success: true,
         lead_id: created.id,
+        leadId: created.id,
+        id: created.id,
         redirect_url: redirectUrl,
+        redirectUrl,
+        landing_url: redirectUrl,
         eta_seconds: 60,
+        etaSeconds: 60,
+        queuedCallInSeconds: 60,
       },
       200,
     );
@@ -152,16 +203,30 @@ export async function handleLeadsWidgetHandoff(
     const message = error instanceof Error ? error.message : "unknown";
 
     if (message === "INVALID_PHONE") {
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "invalid_phone",
+        },
+        "lead handoff validation failed",
+      );
       return parseValidationError("lead.phone is not a valid phone.");
     }
 
     if (message === "WORKSPACE_NOT_FOUND") {
+      deps.logger.warn(
+        {
+          request_id: requestId,
+          reason: "workspace_not_found",
+        },
+        "lead handoff validation failed",
+      );
       return parseValidationError("Unknown lead_chat_slug.");
     }
 
     deps.logger.error(
       {
-        requestId,
+        request_id: requestId,
         error: message,
       },
       "lead handoff endpoint failed",

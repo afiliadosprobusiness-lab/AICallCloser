@@ -21,6 +21,7 @@ const basePayload = {
     accepted_at: "2026-02-19T12:34:56.000Z",
     text_version: "v1",
     text: "Acepto ser contactado",
+    explicit_response: "SI",
     ip: "127.0.0.1",
     user_agent: "Mozilla/5.0",
   },
@@ -77,8 +78,14 @@ test("leads handoff returns 200 on success", async () => {
   assert.equal(response.status, 200);
   assert.equal(json.success, true);
   assert.equal(json.lead_id, "lead_handoff_1");
+  assert.equal(json.leadId, "lead_handoff_1");
+  assert.equal(json.id, "lead_handoff_1");
   assert.equal(json.redirect_url, "https://tuapp.com/session/lead_handoff_1");
+  assert.equal(json.redirectUrl, "https://tuapp.com/session/lead_handoff_1");
+  assert.equal(json.landing_url, "https://tuapp.com/session/lead_handoff_1");
   assert.equal(json.eta_seconds, 60);
+  assert.equal(json.etaSeconds, 60);
+  assert.equal(json.queuedCallInSeconds, 60);
   assert.equal(enqueueCalled, true);
 });
 
@@ -131,4 +138,20 @@ test("leads handoff returns 400 on invalid payload", async () => {
 
   assert.equal(response.status, 400);
   assert.equal(typeof json.error, "string");
+});
+
+test("leads handoff accepts lowercase explicit_response aliases", async () => {
+  const payload = {
+    ...basePayload,
+    consent: {
+      ...basePayload.consent,
+      explicit_response: "yes",
+    },
+  };
+
+  const response = await handleLeadsWidgetHandoff(buildRequest(payload, "secret-token"), createDeps());
+  const json = (await response.json()) as Record<string, unknown>;
+
+  assert.equal(response.status, 200);
+  assert.equal(json.success, true);
 });

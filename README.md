@@ -253,6 +253,36 @@ Endpoint de producción para recibir handoff desde `leads.widget`:
 
 - `POST /api/leads/handoff`
 - Auth: `Authorization: Bearer <IACLOSER_API_KEY>`
+- Content-Type: `application/json`
+
+Payload esperado (resumen):
+
+```json
+{
+  "source": {
+    "product": "leads.widget",
+    "widget_id": "abc123",
+    "client_id": "uid_xxx",
+    "lead_chat_slug": "mi-negocio-chat",
+    "sent_at": "2026-02-19T12:34:56.000Z"
+  },
+  "lead": {
+    "name": "Juan Perez",
+    "phone": "14155552671",
+    "collected_info": "Resumen de calificacion..."
+  },
+  "consent": {
+    "accepted": true,
+    "accepted_at": "2026-02-19T12:34:56.000Z",
+    "text_version": "v1",
+    "text": "Acepto ser contactado...",
+    "explicit_response": "SI",
+    "ip": "x.x.x.x",
+    "user_agent": "Mozilla/5.0 ..."
+  },
+  "history": [{ "role": "user", "content": "..." }]
+}
+```
 
 Respuesta exitosa:
 
@@ -260,8 +290,14 @@ Respuesta exitosa:
 {
   "success": true,
   "lead_id": "cma123...",
+  "leadId": "cma123...",
+  "id": "cma123...",
   "redirect_url": "https://tuapp.com/session/cma123...",
-  "eta_seconds": 60
+  "redirectUrl": "https://tuapp.com/session/cma123...",
+  "landing_url": "https://tuapp.com/session/cma123...",
+  "eta_seconds": 60,
+  "etaSeconds": 60,
+  "queuedCallInSeconds": 60
 }
 ```
 
