@@ -55,6 +55,7 @@ type LiveChatToCallDemoSectionProps = {
   onOpenLeadChat?: () => void;
   prefillContext?: LiveDemoPrefillContext | null;
   runtimeContext?: LiveDemoRuntimeContext | null;
+  hasCapturedLead?: boolean;
 };
 
 const DEMO_LEAD = {
@@ -300,6 +301,8 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
   const [leftVisibleCount, setLeftVisibleCount] = useState(0);
   const [rightVisibleCount, setRightVisibleCount] = useState(0);
   const [stage, setStage] = useState<DemoStage>("chatting");
+  const [callUserReply, setCallUserReply] = useState("");
+  const [callUserCloseReply, setCallUserCloseReply] = useState("");
   const timeoutsRef = useRef<number[]>([]);
 
   const leftChatMessages = useMemo(() => {
@@ -309,6 +312,61 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     if (clone[6]) clone[6].text = activePhone;
     return clone;
   }, [activeBusiness, activePhone, copy.chat, openingMessage]);
+
+  const callReplyOptions = useMemo(() => {
+    if (language === "en") {
+      return {
+        book_google_meet: [
+          "I need more booked inspections this week.",
+          "I want qualified appointments, not random leads.",
+          "Book me high-intent prospects only.",
+        ],
+        schedule_call: [
+          "I can do a quick call today.",
+          "Tomorrow morning works for me.",
+          "Schedule me with your team this afternoon.",
+        ],
+        simulate_sale: [
+          "Yes, let's run a realistic sales scenario.",
+          "I want to test how you handle objections.",
+          "Simulate a real lead call for my business.",
+        ],
+        close: [
+          "Sounds good, send me the confirmation.",
+          "Great, I am ready to continue.",
+          "Perfect, let's move forward.",
+        ],
+      };
+    }
+
+    return {
+      book_google_meet: [
+        "Necesito mas inspecciones agendadas esta semana.",
+        "Quiero citas calificadas, no leads frios.",
+        "Agendame solo prospectos con intencion real.",
+      ],
+      schedule_call: [
+        "Puedo una llamada rapida hoy.",
+        "Manana por la manana me queda bien.",
+        "Agendame con tu equipo hoy por la tarde.",
+      ],
+      simulate_sale: [
+        "Si, hagamos una simulacion real de cierre.",
+        "Quiero probar como manejas objeciones.",
+        "Simula una llamada real para mi negocio.",
+      ],
+      close: [
+        "Perfecto, enviame la confirmacion.",
+        "Excelente, listo para continuar.",
+        "Genial, avancemos.",
+      ],
+    };
+  }, [language]);
+
+  const pickRandom = (items: string[]) => {
+    if (items.length === 0) return "";
+    return items[Math.floor(Math.random() * items.length)] ?? "";
+  };
 
   const rightMessages = useMemo(() => {
     const contextText =
@@ -327,13 +385,37 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
         : `Veo que estas en ${activeBusiness}. Buscas agendar inspecciones o cerrar trabajos por telefono?`;
 
     return [
-      contextText,
-      callingText,
-      openingText,
-      qualifyText,
-      copy.rightMessages.outcome[objective],
+      { role: "assistant" as const, text: contextText },
+      { role: "assistant" as const, text: callingText },
+      { role: "assistant" as const, text: openingText },
+      { role: "assistant" as const, text: qualifyText },
+      {
+        role: "user" as const,
+        text:
+          callUserReply ||
+          (language === "en"
+            ? "I want more qualified calls this month."
+            : "Quiero mas llamadas calificadas este mes."),
+      },
+      { role: "assistant" as const, text: copy.rightMessages.outcome[objective] },
+      {
+        role: "user" as const,
+        text:
+          callUserCloseReply ||
+          (language === "en" ? "Perfect, send me the details." : "Perfecto, enviame los detalles."),
+      },
     ];
-  }, [activeBusiness, activeGoal, activeLeadName, activePhone, copy.rightMessages.outcome, language, objective]);
+  }, [
+    activeBusiness,
+    activeGoal,
+    activeLeadName,
+    activePhone,
+    callUserCloseReply,
+    callUserReply,
+    copy.rightMessages.outcome,
+    language,
+    objective,
+  ]);
 
   const statusSteps = useMemo(() => {
     return [
@@ -367,7 +449,7 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     if (leftVisibleCount >= leftChatMessages.length) return;
     const timer = window.setTimeout(() => {
       setLeftVisibleCount((current) => current + 1);
-    }, leftVisibleCount === 0 ? 280 : 820);
+    }, 1000);
 
     return () => window.clearTimeout(timer);
   }, [leftChatMessages.length, leftVisibleCount]);
@@ -399,16 +481,20 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
     setConsentError(null);
     setRightVisibleCount(0);
     clearTimeline();
+    setCallUserReply(pickRandom(callReplyOptions[objective]));
+    setCallUserCloseReply(pickRandom(callReplyOptions.close));
 
     void props.onSubmitLead?.(payload);
     void props.onStartDemoCall?.(payload);
 
     const timeline: Array<{ delay: number; stage: DemoStage; count: number }> = [
-      { delay: 200, stage: "consent_received", count: 1 },
-      { delay: 1050, stage: "calling", count: 2 },
-      { delay: 2100, stage: "on_call", count: 3 },
-      { delay: 3200, stage: "on_call", count: 4 },
-      { delay: 4300, stage: "outcome", count: 5 },
+      { delay: 1000, stage: "consent_received", count: 1 },
+      { delay: 2000, stage: "calling", count: 2 },
+      { delay: 3000, stage: "on_call", count: 3 },
+      { delay: 4000, stage: "on_call", count: 4 },
+      { delay: 5000, stage: "on_call", count: 5 },
+      { delay: 6000, stage: "outcome", count: 6 },
+      { delay: 7000, stage: "outcome", count: 7 },
     ];
 
     for (const step of timeline) {
@@ -584,14 +670,16 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
                     >
                       {copy.tryDemo}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={props.onOpenLeadChat}
-                      className="h-11 w-full border border-white/15 bg-white/[0.03] text-white/85 hover:bg-white/[0.09]"
-                    >
-                      {copy.openChat}
-                    </Button>
+                    {!props.hasCapturedLead ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={props.onOpenLeadChat}
+                        className="h-11 w-full border border-white/15 bg-white/[0.03] text-white/85 hover:bg-white/[0.09]"
+                      >
+                        {copy.openChat}
+                      </Button>
+                    ) : null}
                   </div>
                   <p className="mt-2 text-center text-xs leading-relaxed text-white/55">{copy.ctaSubtext}</p>
                 </motion.div>
@@ -613,9 +701,14 @@ export function LiveChatToCallDemoSection(props: LiveChatToCallDemoSectionProps)
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.24 }}
-                    className="rounded-2xl border border-white/12 bg-[#141C33]/72 px-4 py-3"
+                    className={cn(
+                      "rounded-2xl border px-4 py-3",
+                      message.role === "assistant"
+                        ? "border-white/12 bg-[#141C33]/72"
+                        : "ml-auto max-w-[92%] border-white/15 bg-[#121724]/85",
+                    )}
                   >
-                    <p className="whitespace-pre-line text-sm leading-relaxed text-white/90">{message}</p>
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-white/90">{message.text}</p>
                   </motion.div>
                 ))}
 

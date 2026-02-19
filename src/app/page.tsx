@@ -76,6 +76,7 @@ export default function HomePage() {
   const [liveDemoPrefill, setLiveDemoPrefill] = useState<LiveDemoPrefillContext | null>(null);
   const [leadChatPrefill, setLeadChatPrefill] = useState<LeadChatPrefillContext | null>(null);
   const [liveDemoRuntime, setLiveDemoRuntime] = useState<LiveDemoRuntimeContext | null>(null);
+  const [hasCapturedLeadForDemo, setHasCapturedLeadForDemo] = useState(false);
   const [isDesktopNavScrolled, setIsDesktopNavScrolled] = useState(false);
   const [isPricingInView, setIsPricingInView] = useState(false);
   const [hasPassedPricing, setHasPassedPricing] = useState(false);
@@ -810,6 +811,7 @@ export default function HomePage() {
     clearLeadChatAutoCloseTimer();
     leadChatAutoCloseTimerRef.current = window.setTimeout(() => {
       setIsLeadChatModalOpen(false);
+      scrollToLiveDemo(false);
       leadChatAutoCloseTimerRef.current = null;
     }, 5000);
   }
@@ -882,6 +884,7 @@ export default function HomePage() {
   }, [liveDemoPrefill?.leadName, locale]);
 
   function onLeadChatCompleted() {
+    setHasCapturedLeadForDemo(true);
     scheduleLeadChatAutoClose();
   }
 
@@ -1043,6 +1046,7 @@ export default function HomePage() {
           }}
           prefillContext={liveDemoPrefill}
           runtimeContext={liveDemoRuntime}
+          hasCapturedLead={hasCapturedLeadForDemo}
         />
 
         <section className="scroll-mt-28 px-1 pb-16">
