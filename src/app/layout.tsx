@@ -22,10 +22,33 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "AI Call Closer",
   description: "SaaS premium multi-tenant para cerrar ventas con llamadas IA.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://ai-call-closer.vercel.app"),
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: ["/icon.svg"],
-    apple: [{ url: "/icon.svg" }],
+    icon: [{ url: "/icon", type: "image/png" }],
+    shortcut: ["/icon"],
+    apple: [{ url: "/apple-icon", type: "image/png" }],
+  },
+  openGraph: {
+    title: "AI Call Closer",
+    description: "SaaS premium multi-tenant para cerrar ventas con llamadas IA.",
+    url: "https://ai-call-closer.vercel.app",
+    siteName: "AI Call Closer",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "AI Call Closer",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Call Closer",
+    description: "SaaS premium multi-tenant para cerrar ventas con llamadas IA.",
+    images: ["/twitter-image"],
   },
 };
 
