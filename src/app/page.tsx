@@ -76,6 +76,8 @@ export default function HomePage() {
   const [leadChatPrefill, setLeadChatPrefill] = useState<LeadChatPrefillContext | null>(null);
   const [liveDemoRuntime, setLiveDemoRuntime] = useState<LiveDemoRuntimeContext | null>(null);
   const [isDesktopNavScrolled, setIsDesktopNavScrolled] = useState(false);
+  const [isPricingInView, setIsPricingInView] = useState(false);
+  const [hasPassedPricing, setHasPassedPricing] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number>(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
   const [testimonialPageCount, setTestimonialPageCount] = useState(1);
@@ -161,6 +163,50 @@ export default function HomePage() {
       } else {
         desktopQuery.removeListener(onViewportChange);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const pricingSection = document.getElementById("precios");
+    if (!pricingSection) return;
+
+    let rafId = 0;
+
+    const updatePricingProgress = () => {
+      rafId = 0;
+      const rect = pricingSection.getBoundingClientRect();
+      const nextPassed = rect.bottom < 120;
+      setHasPassedPricing((current) => (current === nextPassed ? current : nextPassed));
+    };
+
+    const onScrollOrResize = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(updatePricingProgress);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const nextInView = entry.isIntersecting;
+        setIsPricingInView((current) => (current === nextInView ? current : nextInView));
+      },
+      {
+        threshold: 0.2,
+        rootMargin: "-15% 0px -45% 0px",
+      },
+    );
+
+    observer.observe(pricingSection);
+    updatePricingProgress();
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
+
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      observer.disconnect();
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
     };
   }, []);
 
@@ -565,14 +611,31 @@ export default function HomePage() {
   );
 
   const isAuthenticated = Boolean(session?.user?.id);
-
-  const primaryHref = useMemo(
-    () => (isAuthenticated ? "/dashboard" : "/register"),
-    [isAuthenticated],
-  );
-
-  const primaryLabel = isAuthenticated ? t("Ir al Dashboard", "Go to Dashboard") : t("Crear Cuenta", "Create Account");
-  const primaryLabelCompact = isAuthenticated ? t("Dashboard", "Dashboard") : t("Crear", "Create");
+  const menuCtaMode = isAuthenticated
+    ? "dashboard"
+    : hasPassedPricing
+      ? "live_demo"
+      : isPricingInView
+        ? "free_trial"
+        : "create_account";
+  const primaryHref = menuCtaMode === "dashboard" ? "/dashboard" : "/register";
+  const primaryLabel =
+    menuCtaMode === "dashboard"
+      ? t("Ir al Dashboard", "Go to Dashboard")
+      : menuCtaMode === "free_trial"
+        ? t("Iniciar prueba gratuita", "Start free trial")
+        : menuCtaMode === "live_demo"
+          ? t("Prueba la demostracion en vivo", "Try the live demo")
+          : t("Crear Cuenta", "Create Account");
+  const primaryLabelCompact =
+    menuCtaMode === "dashboard"
+      ? t("Dashboard", "Dashboard")
+      : menuCtaMode === "free_trial"
+        ? t("Prueba gratis", "Free trial")
+        : menuCtaMode === "live_demo"
+          ? t("Demo en vivo", "Live demo")
+          : t("Crear", "Create");
+  const isLiveDemoPrimaryCta = menuCtaMode === "live_demo";
 
   useEffect(() => {
     if (renderedTestimonialsCount >= testimonials.length) return;
@@ -873,18 +936,26 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button
-                asChild
+                asChild={!isLiveDemoPrimaryCta}
                 className={cn(
                   "h-9 w-full min-w-0 flex-1 bg-gradient-to-r from-[#3D7BFF] to-[#8D4BFF] px-3 text-xs text-white transition-transform hover:scale-[1.02] sm:w-auto sm:flex-none sm:text-sm md:duration-200 md:ease-out",
                   isDesktopNavScrolled
                     ? "md:from-[#3D7BFF] md:to-[#8D4BFF] md:shadow-[0_0_34px_rgba(86,92,255,0.42)]"
                     : "md:from-[#4E63A8] md:to-[#6F5AA8] md:shadow-[0_0_18px_rgba(88,98,176,0.32)]",
                 )}
+                onClick={isLiveDemoPrimaryCta ? () => scrollToLiveDemo(true) : undefined}
               >
-                <Link href={primaryHref} className="truncate text-center">
-                  <span className="sm:hidden">{primaryLabelCompact}</span>
-                  <span className="hidden sm:inline">{primaryLabel}</span>
-                </Link>
+                {isLiveDemoPrimaryCta ? (
+                  <span className="truncate text-center">
+                    <span className="sm:hidden">{primaryLabelCompact}</span>
+                    <span className="hidden sm:inline">{primaryLabel}</span>
+                  </span>
+                ) : (
+                  <Link href={primaryHref} className="truncate text-center">
+                    <span className="sm:hidden">{primaryLabelCompact}</span>
+                    <span className="hidden sm:inline">{primaryLabel}</span>
+                  </Link>
+                )}
               </Button>
             </div>
           </nav>
